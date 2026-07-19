@@ -1,0 +1,39 @@
+name: Update project index
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "projects/**"
+      - "archive/**"
+      - "scripts/generate_index.py"
+
+permissions:
+  contents: write
+
+jobs:
+  update-index:
+    runs-on: ubuntu-latest
+    # 봇 커밋이 다시 트리거되는 무한루프 방지
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Regenerate index
+        run: python scripts/generate_index.py
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet README.md; then
+            echo "No changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "chore: update project index [skip ci]"
+          git push
