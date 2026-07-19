@@ -2,7 +2,7 @@ name: Update project index
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "projects/**"
       - "archive/**"
