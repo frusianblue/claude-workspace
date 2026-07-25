@@ -20,6 +20,6 @@
 
 <!--
 운영 규칙: 이 README는 항상 최신 상태로 덮어쓴다.
-새 Claude 세션 시작 시 이 파일 내용을 붙여넣으면 컨텍스트가 잡히도록 유지.
-Claude 프로젝트의 Project Knowledge에도 이 파일을 올려두고 갱신 시 교체.
+레포는 Claude 프로젝트에 GitHub 연동됨 — push 후 프로젝트 지식에서 Sync now 필수.
+새 세션은 붙여넣기 없이 "이어서 하자"로 시작 (Claude가 README와 최신 핸드오프를 자동으로 읽음).
 -->
