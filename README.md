@@ -7,6 +7,7 @@
 <!-- INDEX:START -->
 | 프로젝트 | 상태 | 최근 작업 | 다음 행동 |
 |---|---|---|---|
+| [eos-asis-replace](projects/eos-asis-replace) | 🟢 active | [2026-07-25](projects/eos-asis-replace/handoffs/2026-07-25.md) | Replace-AsisIp -Apply 실제 치환 테스트 (집 환경: 백업 생성 → 치환 → 재DryRun 0건 확인) |
 | [ai-agent-proto](projects/ai-agent-proto) | 🟢 active | [2026-07-19](projects/ai-agent-proto/handoffs/2026-07-19.md) | Debug 탭에서 두 앱 프로세스 생존 확인 (포트 점유 의심, Port already in use 로그) |
 <!-- INDEX:END -->
 
