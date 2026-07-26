@@ -7,7 +7,7 @@
 <!-- INDEX:START -->
 | 프로젝트 | 상태 | 최근 작업 | 다음 행동 |
 |---|---|---|---|
-| [eos-asis-replace](projects/eos-asis-replace) | 🟢 active | [2026-07-25](projects/eos-asis-replace/handoffs/2026-07-25.md) | 집 PS 5.1에서 실소스 1건 풀사이클: Find v8(all) → 경로 매핑표 → Replace-AsisPath DryRun→Apply→재DryRun 0건 (+ 이월: Replace-AsisIp -Apply 테스트) |
+| [eos-asis-replace](projects/eos-asis-replace) | 🟢 active | [2026-07-27](projects/eos-asis-replace/handoffs/2026-07-27.md) | portal UNMAPPED 1건 판정(매핑 추가 or 의도적 보류) → 회사 반입(ISE, v8.2+v3) → 회사 portal 실치환 + CLASS 6건 java 대응 확인 |
 | [ai-agent-proto](projects/ai-agent-proto) | 🟢 active | [2026-07-19](projects/ai-agent-proto/handoffs/2026-07-19.md) | Debug 탭에서 두 앱 프로세스 생존 확인 (포트 점유 의심, Port already in use 로그) |
 <!-- INDEX:END -->
 
