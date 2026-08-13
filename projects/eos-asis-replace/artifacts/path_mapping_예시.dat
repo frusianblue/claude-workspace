@@ -1,9 +1,0 @@
-﻿# 경로 매핑표 — 소스별로 이 파일을 복사해서 사용 (예: path_mapping_portal.dat)
-# 형식: OldPath,NewPath[,비고]
-# - 구분자는 / 또는 \ 아무거나 (소스 안의 d:/a, d:\a, d:\\a 전부 자동 매칭됨)
-# - 긴 경로가 자동으로 우선 적용됨 (d:/eos/upload 가 d:/eos 보다 먼저)
-# - OldPath 중복 금지 (스크립트가 검증)
-# OldPath,NewPath[,비고]
-d:/eos/upload,d:/app/eos/upload,업로드 루트 이동
-d:/eos/batch/log,d:/app/logs/batch,로그 경로 표준화
-d:/eos,d:/app/eos,나머지 전체
