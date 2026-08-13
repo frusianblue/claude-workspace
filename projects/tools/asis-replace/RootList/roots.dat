@@ -1,0 +1,3 @@
+﻿# Find-AsisPath / Replace-AsisIp 일괄 목록 — 한 줄에 소스 경로 하나 (# 주석)
+# 사용: .\Find-AsisPath.ps1 -RootList .\RootList\roots.dat
+D:\AppDev\eGovFrameDev-5.0.1-Windows-64bit\workspace-egov\portal
