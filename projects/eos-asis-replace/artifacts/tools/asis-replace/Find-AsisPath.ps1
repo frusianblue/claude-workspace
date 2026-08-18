@@ -7,14 +7,14 @@
 #   입력 : -Root 소스 폴더 (또는 -RootList 목록 파일)
 #   출력 : report\<소스명>_asis_path_report.dat
 #   선행 : 없음 — 소스 1건의 첫 작업
-#   상태 : 현행 v9.5
+#   상태 : 현행 v9.6
 #
 #   공통 : 이 파일은 UTF-8 with BOM 으로 저장할 것 (PS 5.1은 BOM 없으면 MS949로 읽음)
 #          실행:  powershell -ExecutionPolicy Bypass -File .\<파일>.ps1 ...
 #          출력 확장자 .dat 유지 (회사 DRM의 csv/txt 자동 암호화 회피)
 #   전체 순서는 ..\README.md 참조
 # ===========================================================================
-# Find-AsisPath.ps1 (v9.5)
+# Find-AsisPath.ps1 (v9.6)
 #
 # ── Kind (무엇을 찾을지) — 지정 안 하면 path,unc ─────────────────────
 #   -Kind path    : 드라이브 경로  d:\eos, W:/data, Z:\\share (java 리터럴 포함)
@@ -82,6 +82,10 @@
 #       (3) IP 옥텟 0-255 검증 (ibatis 버전 2.3.4.726 차단) + -ExcludeIps (127.0.0.1 등)
 #       (4) *-javadoc.jar/*-sources.jar 및 javadoc 생성 HTML 기본 제외
 #       (5) ExcludeDomains에 jquery/unicode/eclipse/webkit 등 실측 도메인 추가
+#
+# v9.6: 구분자 없는 드라이브 표기 탐지 — "Z:"  "T:"  drive=Z:
+#       v9.5까지는 [A-Za-z]: 뒤에 / 나 \ 가 있어야만 잡아서(forward:/ 오탐 방지)
+#       private String Drive3 = "Z:"; 를 통째로 놓쳤다. 치환은 수동(드라이브 루트 매핑 금지 규칙 유지).
 #
 # 사용법: .\Find-AsisPath.ps1 -Root "C:\src" [-Kind all] [-Scope src] [-Out report.dat]
 #         .\Find-AsisPath.ps1 -Root "C:\src" -Inventory            # 먼저 이걸로 사각지대 확인
@@ -275,6 +279,13 @@ function New-KindPattern([string[]]$kinds) {
     if ($kinds -contains "path") {
         $dc = Get-DriveClass $Drives
         $alts.Add('(?<path>(?<![A-Za-z0-9])[' + $dc + ']:(?=' + $SEP + ')(?:' + $SEP + $SEG + '*)+)')
+        # [v9.6] 구분자 없는 드라이브 표기 — private String Drive3 = "Z:";
+        #   보통 런타임에 "Z:" + "\\data" 로 붙이므로 이것도 AS-IS 경로다.
+        #   다만 forward:/ , yaml의 a: value , JSON의 "a":"b" 와 구분해야 해서 조건이 빡세다:
+        #   (1) 따옴표로 완전히 감싸이고 닫는 따옴표 뒤가 값이 아닐 것  "Z:";  "Z:")
+        #   (2) 또는 = 뒤 줄 끝  (properties의  drive=Z:)
+        $alts.Add('(?<path>(?<=["''])[' + $dc + ']:(?=["''](?![\w"''\[{])))')
+        $alts.Add('(?<path>(?<=[=\s])[' + $dc + ']:(?=[ \t]*(?:[\r\n]|$)))')
     }
     # 3) IPv4
     if ($kinds -contains "ip") {
@@ -670,7 +681,7 @@ $scopeDesc = @{
     src   = "텍스트만, 빌드산출물 폴더 제외 (소스 증적)"
     build = "CLASS + 아카이브만 (재빌드 후 검증)"
 }
-Write-Host "===== Find-AsisPath v9.5 (Scope=$Scope) ====="
+Write-Host "===== Find-AsisPath v9.6 (Scope=$Scope) ====="
 Write-Host "검색 범위: $($scopeDesc[$Scope])"
 $kindDesc = ($kinds -join ', ')
 if ($kinds -contains 'path') { $kindDesc = $kindDesc + '  (Drives=' + $Drives + ')' }

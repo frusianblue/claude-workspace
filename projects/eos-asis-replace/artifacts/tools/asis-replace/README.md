@@ -2,8 +2,8 @@
 
 | 파일 | 단계 | 역할 |
 |---|---|---|
-| `Find-AsisPath.ps1` (v9.5) | A-1 | 전수조사. `-Kind path,unc,ip,port,domain,host`, `-Scope all/src/build`, `-Inventory`, `-AddExt`, `-ExcludeJars`/`-ExcludeDomains`(노이즈 제외), `-RootList` 일괄, jar/war 중첩 내부까지 |
-| `Extract-MappingDraft.ps1` (v2) | A-2 | Find 리포트에서 매핑표 초안 추출 (`-Mode Path\|Ip\|Domain\|Port`) |
+| `Find-AsisPath.ps1` (v9.6) | A-1 | 전수조사. `-Kind path,unc,ip,port,domain,host`, `-Scope all/src/build`, `-Inventory`, `-AddExt`, `-ExcludeJars`/`-ExcludeDomains`(노이즈 제외), `-RootList` 일괄, jar/war 중첩 내부까지 |
+| `Extract-MappingDraft.ps1` (v2.1) | A-2 | Find 리포트에서 매핑표 초안 추출 (`-Mode Path\|Ip\|Domain\|Port`) |
 | `Replace-AsisPath.ps1` (v4.1) | A-3 | 경로 치환(드라이브 + UNC/NAS). DryRun 기본, `-Apply` 시 자동 백업 |
 | `Replace-AsisIp.ps1` (v5) | A-4 | IP 치환. `-UsePort`로 `IP:포트` 규칙 우선 |
 | `RootList/roots.dat` | 입력 | Find·ReplaceIp 일괄 목록 (한 줄 = 소스 경로) |
@@ -71,6 +71,12 @@ EUC-KR·UTF-8 섞인 레거시 소스여도 **검출은 영향 없다** (경로/
 | `\d{1,3}`, `\s+`, `\w-`, `\x20\t\r\n\f` | 203 | java/js 정규식 이스케이프 | UNC는 **점 있는 호스트** 또는 **2글자+ 호스트 + 2글자+ 공유명**만 인정 |
 | `//uss/olp/...`(class) | 20 | 상수풀 길이바이트(0x2F=`/`)가 만든 가짜 | 위 (1)로 같이 사라짐 |
 | `C:\Users\...\.m2\...` | 209 | `maven-javadoc-plugin-stale-data.txt` | `*stale-data.txt` 기본 제외 |
+
+**놓쳤던 것 (v9.6에서 추가)**: 구분자 없는 드라이브 표기 `private String Drive3 = "Z:";` / `drive=Z:`.
+`[A-Za-z]:` 뒤에 `/`나 `\`가 있어야만 잡던 규칙(`forward:/` 오탐 방지) 때문에 통째로 빠져 있었다.
+따옴표로 완전히 감싸인 경우와 `=` 뒤 줄 끝만 인정해서 yaml `key: value`, JSON `"a":"b"`, 삼항 `x:y` 는 안 걸린다.
+**이건 조사만 되고 치환은 수동이다** — 드라이브 루트 통짜 매핑은 금지 규칙이고, 보통 코드에서
+`Drive3 + "\\data"` 처럼 이어붙이기 때문이다. 초안(A-2)에 `# [수동확인]` 주석으로 따로 남는다.
 
 **대신 포기한 것**: 서버명만 있는 `\nas01`(공유명 없음), 공유명이 1글자인 `\nas01\a`.
 정규식 이스케이프와 구조가 완전히 같아 구분이 불가능하다. 이런 표기가 실제로 있으면 `-Pattern`으로 따로 조사할 것.

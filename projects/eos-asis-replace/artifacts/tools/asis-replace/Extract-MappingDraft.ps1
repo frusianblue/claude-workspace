@@ -6,7 +6,7 @@
 #   입력 : -Report Find 리포트 .dat, -Mode Path|Ip|Domain|Port
 #   출력 : report\<소스명>_mapping_draft_<path|ip|domain|port>.dat
 #   선행 : A-1 Find 실행 완료
-#   상태 : 현행 v2
+#   상태 : 현행 v2.1
 #
 #   공통 : 이 파일은 UTF-8 with BOM 으로 저장할 것 (PS 5.1은 BOM 없으면 MS949로 읽음)
 #          실행:  powershell -ExecutionPolicy Bypass -File .\<파일>.ps1 ...
@@ -98,7 +98,12 @@ function Get-NormalizedPath([string]$v, [int]$depth) {
         return '//' + ($segs -join '/')
     }
     if ($depth -gt 0 -and $segs.Count -gt ($depth + 1)) { $segs = $segs[0..$depth] }
-    if ($segs.Count -lt 2) { return $null }   # 드라이브 루트만 남은 건 매핑 재료가 아니다
+    if ($segs.Count -lt 2) {
+        # 드라이브 루트 단독("Z:", "D:/")은 Replace가 치환할 수 없다(통짜 매핑 금지).
+        # 조용히 버리지 않고 별도로 모아 초안에 주석으로 남긴다.
+        $script:RootOnly[$segs[0]] = $true
+        return $null
+    }
     return ($segs -join '/')
 }
 
@@ -110,6 +115,7 @@ function Get-NormalizedPort([string]$v) {
 
 # ---------- 값 수집 ----------
 $counts = @{}
+$script:RootOnly = @{}
 function Add-Value([string]$v) {
     if (-not $v) { return }
     if ($counts.ContainsKey($v)) { $counts[$v] = $counts[$v] + 1 } else { $counts[$v] = 1 }
@@ -141,18 +147,23 @@ if ($hasKind) {
 }
 
 $values = @($counts.Keys | Sort-Object)
-if ($values.Count -eq 0) {
+if ($values.Count -eq 0 -and $script:RootOnly.Count -eq 0) {
     Write-Warning "추출된 값이 없음 (Mode=$Mode). Find 실행 시 -Kind 에 $($kinds -join ',') 가 포함됐는지 확인할 것"
     exit 1
 }
 
-Write-Host "===== Extract-MappingDraft v2 (Mode=$Mode) ====="
+Write-Host "===== Extract-MappingDraft v2.1 (Mode=$Mode) ====="
 Write-Host "리포트   : $Report (FILE $($rows.Count)행, Kind컬럼=$hasKind)"
 $depthNote = ''
 if ($Mode -eq 'Path' -and $Depth -gt 0) { $depthNote = ', Depth=' + $Depth }
 Write-Host "추출 결과: $($values.Count)건 (중복 제거 후)$depthNote"
 Write-Host ""
 $values | Sort-Object { -($counts[$_]) } | ForEach-Object { Write-Host ("  {0,5}건  {1}" -f $counts[$_], $_) }
+if ($script:RootOnly.Count -gt 0) {
+    Write-Host ""
+    Write-Host "[수동확인] 드라이브 루트 단독 표기 $($script:RootOnly.Count)건 — 치환 스크립트로는 못 바꾼다:"
+    ($script:RootOnly.Keys | Sort-Object) | ForEach-Object { Write-Host "         $_" }
+}
 
 if ($ConsoleOnly) { return }
 
@@ -179,6 +190,12 @@ switch ($Mode) {
     "Ip"     { $lines.Add("# 127.0.0.1 / 0.0.0.0 / 버전번호 등 치환 대상이 아닌 값이 섞여 있다 — 반드시 선별할 것") }
     "Domain" { $lines.Add("# 전용 치환 스크립트는 아직 없다 — 인벤토리/체크리스트 용도 (hosts·WAS 설정·방화벽 확인)") }
     "Port"   { $lines.Add("# 포트 치환은 Replace-AsisIp 의 OldPort/NewPort + -UsePort 로 처리한다") }
+}
+# Path 초안은 Replace 매핑표(헤더 없는 형식)로 바로 들어가므로 헤더를 주석으로 낸다
+if ($Mode -eq "Path" -and $script:RootOnly.Count -gt 0) {
+    $lines.Add("# [수동확인] 드라이브 루트 단독 표기 — 치환 스크립트로는 못 바꾼다 (통짜 매핑 금지 규칙)")
+    $lines.Add('#   보통 코드에서  Drive3 + "\data\eos"  처럼 이어붙인다. 소스에서 직접 고칠 것:')
+    foreach ($k in ($script:RootOnly.Keys | Sort-Object)) { $lines.Add("#   " + $k) }
 }
 # Path 초안은 Replace 매핑표(헤더 없는 형식)로 바로 들어가므로 헤더를 주석으로 낸다
 if ($Mode -eq "Path") { $lines.Add("# " + $header) } else { $lines.Add($header) }
