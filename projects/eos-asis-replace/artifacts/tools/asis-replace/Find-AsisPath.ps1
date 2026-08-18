@@ -7,14 +7,14 @@
 #   입력 : -Root 소스 폴더 (또는 -RootList 목록 파일)
 #   출력 : report\<소스명>_asis_path_report.dat
 #   선행 : 없음 — 소스 1건의 첫 작업
-#   상태 : 현행 v9.4
+#   상태 : 현행 v9.5
 #
 #   공통 : 이 파일은 UTF-8 with BOM 으로 저장할 것 (PS 5.1은 BOM 없으면 MS949로 읽음)
 #          실행:  powershell -ExecutionPolicy Bypass -File .\<파일>.ps1 ...
 #          출력 확장자 .dat 유지 (회사 DRM의 csv/txt 자동 암호화 회피)
 #   전체 순서는 ..\README.md 참조
 # ===========================================================================
-# Find-AsisPath.ps1 (v9.4)
+# Find-AsisPath.ps1 (v9.5)
 #
 # ── Kind (무엇을 찾을지) — 지정 안 하면 path,unc ─────────────────────
 #   -Kind path    : 드라이브 경로  d:\eos, W:/data, Z:\\share (java 리터럴 포함)
@@ -76,6 +76,13 @@
 #       (2) //host/share 는 기본 OFF, -UncSlash 로만 켬 (DOCTYPE -//W3C//DTD 오탐 881건 제거)
 #       (3) UNC 호스트에도 -ExcludeDomains 적용
 #
+# v9.5: 실측 2차 리포트(1918건, domain 1829건) 오탐 제거 —
+#       (1) DomainSuffix에서 io/gov/info/biz/edu/mil/local 제거 (java.io, egovframework.gov, LOGGER.info)
+#       (2) 도메인 뒤 lookahead에 * _ 추가 (import java.io.*; 차단)
+#       (3) IP 옥텟 0-255 검증 (ibatis 버전 2.3.4.726 차단) + -ExcludeIps (127.0.0.1 등)
+#       (4) *-javadoc.jar/*-sources.jar 및 javadoc 생성 HTML 기본 제외
+#       (5) ExcludeDomains에 jquery/unicode/eclipse/webkit 등 실측 도메인 추가
+#
 # 사용법: .\Find-AsisPath.ps1 -Root "C:\src" [-Kind all] [-Scope src] [-Out report.dat]
 #         .\Find-AsisPath.ps1 -Root "C:\src" -Inventory            # 먼저 이걸로 사각지대 확인
 # ===========================================================================
@@ -87,13 +94,19 @@ param(
                                          # path|unc|ip|port|domain|host|all (콤마 나열 가능)
     [string]$Drives  = "*",              # Kind=path 대상 드라이브. "*"=A-Z 전부, "d,w,x,y,z" 처럼 제한 가능
     [string[]]$Hosts = @(),              # Kind=host / port 판정용 서버명 (점 없는 이름)
+    # [v9.5] io/gov/info/biz/edu/mil/local 은 뺐다 — java 패키지·메서드와 충돌한다
+    #   실측: java.io(630) egovframework.gov(282) LOGGER.info(13) <- 전부 도메인이 아니다
+    #   필요하면 직접 지정: -DomainSuffix "co.kr,go.kr,kr,com,net,org,local"
     [string[]]$DomainSuffix = @("co.kr","go.kr","or.kr","re.kr","ne.kr","ac.kr","pe.kr",
-                                "kr","com","net","org","edu","gov","mil","io","biz","info",
-                                "local","intra","internal","lan","corp"),
+                                "kr","com","net","org"),
     [string]$Pattern = "",               # 지정 시 -Kind 무시하고 이 정규식만 사용 (v8.2 호환)
     [string]$Out     = "report\asis_path_report.dat",
     [string[]]$ExcludeDirs = @(".git",".svn",".metadata","node_modules","bak","backup"),
-    [string[]]$ExcludeFiles = @("*.bak","*.back","*stale-data.txt"),   # 파일명 패턴 제외
+    # v9.5: javadoc 생성물(package-tree/overview-tree/serialized-form 등)과 빌드 메타는 기본 제외
+    [string[]]$ExcludeFiles = @("*.bak","*.back","*stale-data.txt",
+                                "package-tree.html","overview-tree.html","overview-frame.html",
+                                "serialized-form.html","allclasses*.html","constant-values.html",
+                                "index-all.html","deprecated-list.html","help-doc.html"),   # 파일명 패턴 제외
     # v9.2: 널리 알려진 OSS/벤더 jar 제외 (파일명 와일드카드, 중첩 jar에도 적용)
     #   전부 조사하려면 -ExcludeJars @()  /  자체 jar가 걸러지면 -ExcludeJars 로 목록을 직접 지정
     [string[]]$ExcludeJars = @(
@@ -107,7 +120,10 @@ param(
         "tiles*","sitemesh*","ehcache*","ojdbc*","classes12*","classes111*","mysql-connector*",
         "mssql-jdbc*","jtds*","postgresql*","tibero*","cubrid*","altibase*","httpclient*",
         "httpcore*","httpmime*","oro-*","ognl*","antlr*","bcprov*","bcpkix*","jsch*","json-*",
-        "joda-time*","egovframework-*","lucy-xss*","tomcat-*","catalina*","jasper*"
+        "joda-time*","egovframework-*","lucy-xss*","tomcat-*","catalina*","jasper*",
+        # v9.5 실측 추가 — javadoc/sources jar 가 도메인 오탐 326건의 원인이었다
+        "*-javadoc.jar","*-sources.jar","*-tests.jar","icu4j*","yasson*","protobuf-java*",
+        "reactor-*","micrometer-*","jakarta*","parsson*","snakeyaml*","byte-buddy*","netty*"
     ),
     # v9.3: 표준 스키마/네임스페이스 도메인 제외 (DTD·XSD·xmlns 선언에서 나오는 값)
     #   판정: 값이 패턴과 같거나 '.패턴'으로 끝나면 제외 (mybatis.org, www.w3.org, xml.apache.org ...)
@@ -118,8 +134,22 @@ param(
         "quartz-scheduler.org","opensymphony.com","sourceforge.net","mozilla.org","w3schools.com",
         "jquery.com","jsdelivr.net","cloudflare.com","googleapis.com","gstatic.com","google.com",
         "github.com","github.io","npmjs.com","bootstrapcdn.com","microsoft.com","purl.org",
-        "dublincore.org","openoffice.org","egovframe.go.kr","egovframework.go.kr","example.com"
+        "dublincore.org","openoffice.org","egovframe.go.kr","egovframework.go.kr","example.com",
+        # v9.5 실측 추가 — 벤더 JS·javadoc·라이브러리 주석에서 나온 것들
+        "egovframework.gov","egovframework.com","jquery.com","jqueryui.com","jquery.org",
+        "sizzlejs.com","jsperf.com","unicode.org","eclipse.org","webkit.org","chromium.org",
+        "sonatype.org","jasypt.org","circleci.com","golang.org","fasterxml.com","vmware.com",
+        "nodejs.org","npmjs.org","json.org","gnu.org","opensource.org","creativecommons.org",
+        "ietf.org","rfc-editor.org","whatwg.org","ecma-international.org","stackoverflow.com",
+        "datatables.net","highcharts.com","ckeditor.com","tinymce.com","momentjs.com",
+        "getbootstrap.com","unpkg.com","cdnjs.com","gmail.com","hotmail.com","yahoo.com",
+        "java.net","java.io","java.com","asp.net",
+        # v9.5 실측 2차 — 벤더 JS 주석의 저자·참고 링크
+        "jsfiddle.net","fluidproject.org","blindsignals.com","eae.net","nwbox.com",
+        "robertpenner.com","jsguide.net","javascript.internet.com","archive.org","maven.org"
     ),
+    # [v9.5] 치환 대상이 아닌 고정 IP (증적은 _skipped.dat)
+    [string[]]$ExcludeIps = @("127.0.0.1","0.0.0.0","255.255.255.255"),
     [switch]$UncSlash,                   # //host/share 형태까지 탐지 (기본 OFF — DOCTYPE 공개식별자 오탐이 심하다)
     [string[]]$AddExt = @(),             # 조사할 확장자 추가. 예: -AddExt "jspf,inc,frm" / -AddExt "*.pc"
                                          #   -AddExt "*" = 확장자 없는 파일까지 전부 (class/jar도 텍스트로 한 번 더 스캔됨)
@@ -149,6 +179,7 @@ $ExcludeFiles = Split-ListArg $ExcludeFiles
 $AddExt       = Split-ListArg $AddExt
 $ExcludeJars    = Split-ListArg $ExcludeJars
 $ExcludeDomains = Split-ListArg $ExcludeDomains
+$ExcludeIps     = Split-ListArg $ExcludeIps
 
 $KindAllowed = @("path","unc","ip","port","domain","host","all")
 foreach ($k in $Kind) {
@@ -247,7 +278,9 @@ function New-KindPattern([string[]]$kinds) {
     }
     # 3) IPv4
     if ($kinds -contains "ip") {
-        $alts.Add('(?<ip>(?<![\w.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.]))')
+        # 옥텟 0-255 검증 — 실측에서 ibatis 버전 2.3.4.726 이 IP로 잡혔다
+        $oct = '(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)'
+        $alts.Add('(?<ip>(?<![\w.])(?:' + $oct + '\.){3}' + $oct + '(?![\d.]))')
     }
     # 4) 도메인 — 접미사가 끝에 와야 매칭 (java 패키지 com.foo.Bar 오탐 방지)
     if ($kinds -contains "domain") {
@@ -258,7 +291,7 @@ function New-KindPattern([string[]]$kinds) {
         # (@ 를 막으면 jdbc thin URL의 DB 호스트를 통째로 놓친다. 대신 메일주소의 도메인도 같이 잡힌다)
         # (path/unc Kind가 켜져 있으면 경로 토큰이 먼저 통째로 소비되므로 파일명 오탐은 나지 않는다)
         $alts.Add('(?<domain>(?<![\w.\-])(?:[A-Za-z0-9](?:[A-Za-z0-9\-]*[A-Za-z0-9])?\.)+(?:' +
-                  $sfx + ')(?!\.?[A-Za-z0-9]))')
+                  $sfx + ')(?!\.?[A-Za-z0-9*_]))')
     }
     # 5) 서버명 직접 지정
     if ($kinds -contains "host") {
@@ -325,6 +358,16 @@ function Test-Excluded([string]$path) {
 # v9.2/9.3: 제외 증적 — 무엇을 걸렀는지 항상 남긴다 (<리포트명>_skipped.dat)
 $script:SkippedArc = @{}
 $script:SkippedDom = @{}
+$script:SkippedIp  = @{}
+
+# v9.5: 치환 대상이 아닌 고정 IP
+function Test-ExcludedIp([string]$value) {
+    if ($ExcludeIps -contains $value) {
+        if ($script:SkippedIp.ContainsKey($value)) { $script:SkippedIp[$value]++ } else { $script:SkippedIp[$value] = 1 }
+        return $true
+    }
+    return $false
+}
 
 # v9.3: 표준 스키마/네임스페이스 도메인인가 (w3.org, mybatis.org, xml.apache.org ...)
 function Test-ExcludedDomain([string]$value) {
@@ -411,6 +454,7 @@ function Add-Result([string]$foundIn, [string]$container, [string]$file, [string
                     [string]$line, [string]$kind, [string]$value, [string]$match) {
     # 표준 스키마 도메인(w3.org, mybatis.org 등)은 리포트에 넣지 않는다 — 집계만 한다
     if ($kind -eq "domain" -and (Test-ExcludedDomain $value)) { return }
+    if ($kind -eq "ip" -and (Test-ExcludedIp $value)) { return }
     if ($kind -eq "unc") {
         $uh = [regex]::Match($value, '^[\\/]+([A-Za-z0-9][\w.\-]*)')
         if ($uh.Success -and $uh.Groups[1].Value.Contains(".") -and (Test-ExcludedDomain $uh.Groups[1].Value)) { return }
@@ -469,6 +513,7 @@ function Invoke-Scan([string]$scanRoot, [string]$outFile) {
     $script:results = New-Object System.Collections.Generic.List[object]
     $script:SkippedArc = @{}
     $script:SkippedDom = @{}
+    $script:SkippedIp  = @{}
 
     # 1) 텍스트 파일 — Select-String 이 인코딩 판정과 줄번호를 처리한다
     if ($doText) {
@@ -540,6 +585,8 @@ function Invoke-Scan([string]$scanRoot, [string]$outFile) {
         $skipRows.Add([pscustomobject]@{ Type="jar"; Name=$k; Hits=$script:SkippedArc[$k]; Why="-ExcludeJars" }) }
     foreach ($k in ($script:SkippedDom.Keys | Sort-Object)) {
         $skipRows.Add([pscustomobject]@{ Type="domain"; Name=$k; Hits=$script:SkippedDom[$k]; Why="-ExcludeDomains" }) }
+    foreach ($k in ($script:SkippedIp.Keys | Sort-Object)) {
+        $skipRows.Add([pscustomobject]@{ Type="ip"; Name=$k; Hits=$script:SkippedIp[$k]; Why="-ExcludeIps" }) }
     if ($skipRows.Count -gt 0) {
         $skFile = $outFile -replace '\.dat$','_skipped.dat'
         $skipRows | Export-Csv -Path $skFile -NoTypeInformation -Encoding UTF8
@@ -623,7 +670,7 @@ $scopeDesc = @{
     src   = "텍스트만, 빌드산출물 폴더 제외 (소스 증적)"
     build = "CLASS + 아카이브만 (재빌드 후 검증)"
 }
-Write-Host "===== Find-AsisPath v9.4 (Scope=$Scope) ====="
+Write-Host "===== Find-AsisPath v9.5 (Scope=$Scope) ====="
 Write-Host "검색 범위: $($scopeDesc[$Scope])"
 $kindDesc = ($kinds -join ', ')
 if ($kinds -contains 'path') { $kindDesc = $kindDesc + '  (Drives=' + $Drives + ')' }

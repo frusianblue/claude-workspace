@@ -2,7 +2,7 @@
 
 | 파일 | 단계 | 역할 |
 |---|---|---|
-| `Find-AsisPath.ps1` (v9.4) | A-1 | 전수조사. `-Kind path,unc,ip,port,domain,host`, `-Scope all/src/build`, `-Inventory`, `-AddExt`, `-ExcludeJars`/`-ExcludeDomains`(노이즈 제외), `-RootList` 일괄, jar/war 중첩 내부까지 |
+| `Find-AsisPath.ps1` (v9.5) | A-1 | 전수조사. `-Kind path,unc,ip,port,domain,host`, `-Scope all/src/build`, `-Inventory`, `-AddExt`, `-ExcludeJars`/`-ExcludeDomains`(노이즈 제외), `-RootList` 일괄, jar/war 중첩 내부까지 |
 | `Extract-MappingDraft.ps1` (v2) | A-2 | Find 리포트에서 매핑표 초안 추출 (`-Mode Path\|Ip\|Domain\|Port`) |
 | `Replace-AsisPath.ps1` (v4.1) | A-3 | 경로 치환(드라이브 + UNC/NAS). DryRun 기본, `-Apply` 시 자동 백업 |
 | `Replace-AsisIp.ps1` (v5) | A-4 | IP 치환. `-UsePort`로 `IP:포트` 규칙 우선 |
@@ -61,7 +61,7 @@
 EUC-KR·UTF-8 섞인 레거시 소스여도 **검출은 영향 없다** (경로/IP/포트/도메인은 전부 ASCII).
 인코딩이 섞이면 리포트 `Match`(줄 전체) 열의 한글만 깨져 보인다 — `Value`/`Line`/`File`은 정확하다.
 
-## 오탐 제거 (v9.4 — 실측 리포트 1390건 분석 결과)
+## 오탐 제거 (v9.4~9.5 — 실측 리포트 2회 분석 결과)
 
 실제 소스에서 돌려보니 **1390건 중 1084건(78%)이 가짜**였다. 원인과 조치:
 
