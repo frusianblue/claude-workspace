@@ -2,7 +2,7 @@
 
 | 파일 | 단계 | 역할 |
 |---|---|---|
-| `Find-AsisPath.ps1` (v9) | A-1 | 전수조사. `-Kind path,unc,ip,port,domain,host`, `-Scope all/src/build`, `-RootList` 일괄, jar/war 중첩 내부까지 |
+| `Find-AsisPath.ps1` (v9.1) | A-1 | 전수조사. `-Kind path,unc,ip,port,domain,host`, `-Scope all/src/build`, `-Inventory`(확장자 사각지대 확인), `-AddExt`, `-RootList` 일괄, jar/war 중첩 내부까지 |
 | `Extract-MappingDraft.ps1` (v2) | A-2 | Find 리포트에서 매핑표 초안 추출 (`-Mode Path\|Ip\|Domain\|Port`) |
 | `Replace-AsisPath.ps1` (v4) | A-3 | 경로 치환(드라이브 + UNC/NAS). DryRun 기본, `-Apply` 시 자동 백업 |
 | `Replace-AsisIp.ps1` (v5) | A-4 | IP 치환. `-UsePort`로 `IP:포트` 규칙 우선 |
@@ -31,9 +31,26 @@
 **3. 리포트 컬럼**: `Kind`(무엇이) / `Value`(매칭된 값 그 자체) / `Target`(뿌리: `d:` `\\nas01` `192.168.1.11` `8080`)
 추가. A-2가 줄 텍스트를 다시 파싱하지 않고 이 컬럼을 바로 먹는다 (v8.2 리포트를 넣으면 자동 폴백).
 
+## 조사 범위 (v9.1)
+
+| 대상 | 조사됨 |
+|---|---|
+| 텍스트 47종 (java/jsp/jspf/jspx/tag/tld/vm/ftl/xml/properties/sql/bat/sh/xsl/xsd/css/json/cfg/asp/php/vbs/.classpath/.project 등) | O |
+| `.class` (상수풀 문자열) | O |
+| jar/war/ear/zip — **중첩 내부까지** (war 안 jar 안 class) | O |
+| exploded 배포 폴더, WEB-INF | O (`-Root`만 그쪽으로) |
+| 목록에 없는 확장자 (`.frm .pc .cbl` 등 레거시) | X → `-Inventory`로 확인 후 `-AddExt` |
+| 확장자 없는 파일 (README, hosts) | X → `-AddExt "*"` |
+| dll/exe/ocx, 한글문서·xls, DB 안, 50MB 넘는 아카이브 엔트리 | X (별도 수단) |
+| `bak`/`backup` 폴더, `*.bak`/`*.back` 파일 | X (기본 제외, `-ExcludeDirs`/`-ExcludeFiles`로 조정) |
+
+EUC-KR·UTF-8 섞인 레거시 소스여도 **검출은 영향 없다** (경로/IP/포트/도메인은 전부 ASCII).
+인코딩이 섞이면 리포트 `Match`(줄 전체) 열의 한글만 깨져 보인다 — `Value`/`Line`/`File`은 정확하다.
+
 ## 표준 흐름
 
 ```
+A-0 Find -Inventory   → 확장자 사각지대 확인 (미조사 확장자 있으면 -AddExt)
 A-1 Find (-Kind all)  → 전수조사 증적 + 매핑표 재료 + 소스유실 탐지
 A-2 Extract -Mode Path/Ip → 초안 .dat (New 열 비어 있음, 사람이 채움)
 A-3 Replace-AsisPath  DryRun → 리포트 검토 → -Apply → 재DryRun 0건

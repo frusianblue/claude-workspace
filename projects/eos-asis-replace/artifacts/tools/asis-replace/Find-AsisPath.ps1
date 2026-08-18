@@ -7,14 +7,14 @@
 #   입력 : -Root 소스 폴더 (또는 -RootList 목록 파일)
 #   출력 : report\<소스명>_asis_path_report.dat
 #   선행 : 없음 — 소스 1건의 첫 작업
-#   상태 : 현행 v9
+#   상태 : 현행 v9.1
 #
 #   공통 : 이 파일은 UTF-8 with BOM 으로 저장할 것 (PS 5.1은 BOM 없으면 MS949로 읽음)
 #          실행:  powershell -ExecutionPolicy Bypass -File .\<파일>.ps1 ...
 #          출력 확장자 .dat 유지 (회사 DRM의 csv/txt 자동 암호화 회피)
 #   전체 순서는 ..\README.md 참조
 # ===========================================================================
-# Find-AsisPath.ps1 (v9)
+# Find-AsisPath.ps1 (v9.1)
 #
 # ── Kind (무엇을 찾을지) — 지정 안 하면 path,unc ─────────────────────
 #   -Kind path    : 드라이브 경로  d:\eos, W:/data, Z:\\share (java 리터럴 포함)
@@ -58,7 +58,13 @@
 #           대소문자 무시라 W:\ 는 잡고 .class 안의 w:\ 는 놓치는 비대칭이 있었음
 #       (5) -Pattern 을 지정하면 v8.2처럼 그 패턴 하나만 사용 (Kind=custom, 하위호환)
 #
+# v9.1: (1) 레거시 확장자 기본 추가 (jspf/jspx/tag/tld/vm/ftl/xsl/xsd/css/json/cfg/asp/php/
+#            vbs/inc/.classpath/.project 등) — v9까지는 16종만 봐서 조용히 놓치던 파일이 있었다
+#       (2) -AddExt "jspf,inc,frm" — 목록에 없는 확장자 추가
+#       (3) -Inventory — 조사 전에 'Root 안에 어떤 확장자가 몇 개 있고, 그중 뭐가 조사 대상인지'만 출력
+#
 # 사용법: .\Find-AsisPath.ps1 -Root "C:\src" [-Kind all] [-Scope src] [-Out report.dat]
+#         .\Find-AsisPath.ps1 -Root "C:\src" -Inventory            # 먼저 이걸로 사각지대 확인
 # ===========================================================================
 
 param(
@@ -75,6 +81,9 @@ param(
     [string]$Out     = "report\asis_path_report.dat",
     [string[]]$ExcludeDirs = @(".git",".svn",".metadata","node_modules","bak","backup"),
     [string[]]$ExcludeFiles = @("*.bak","*.back"),   # 파일명 패턴 제외
+    [string[]]$AddExt = @(),             # 조사할 확장자 추가. 예: -AddExt "jspf,inc,frm" / -AddExt "*.pc"
+                                         #   -AddExt "*" = 확장자 없는 파일까지 전부 (class/jar도 텍스트로 한 번 더 스캔됨)
+    [switch]$Inventory,                  # 조사 안 하고, Root 안의 확장자 분포 + 조사대상 여부만 출력
     [ValidateSet("all","src","build")]
     [string]$Scope = "all"
 )
@@ -97,6 +106,7 @@ $Hosts        = Split-ListArg $Hosts
 $DomainSuffix = Split-ListArg $DomainSuffix
 $ExcludeDirs  = Split-ListArg $ExcludeDirs
 $ExcludeFiles = Split-ListArg $ExcludeFiles
+$AddExt       = Split-ListArg $AddExt
 
 $KindAllowed = @("path","unc","ip","port","domain","host","all")
 foreach ($k in $Kind) {
@@ -113,8 +123,23 @@ switch ($Scope) {
     default { $doText = $true;  $doClass = $true;  $doArc = $true }
 }
 
+# v9.1: 레거시 소스 확장자 추가 (jspf/tld/vm/xsl/eclipse 메타 등)
+#       여기 없는 확장자는 '조사 안 된다' — -Inventory 로 먼저 확인하고 -AddExt 로 붙일 것
 $textExt = @("*.java","*.js","*.xml","*.properties","*.jsp","*.sql",
-             "*.bat","*.cmd","*.sh","*.conf","*.ini","*.html","*.htm","*.txt","*.yml","*.yaml")
+             "*.bat","*.cmd","*.sh","*.conf","*.ini","*.html","*.htm","*.txt","*.yml","*.yaml",
+             "*.jspf","*.jspx","*.tag","*.tagx","*.tld","*.vm","*.ftl","*.tpl","*.inc",
+             "*.xsl","*.xslt","*.xsd","*.dtd","*.css","*.json","*.cfg","*.config","*.policy",
+             "*.asp","*.php","*.vbs","*.reg","*.mf","*.classpath","*.project","*.prefs")
+if ($AddExt.Count -gt 0) {
+    $textExt += ($AddExt | ForEach-Object {
+        $e = $_.Trim()
+        if ($e -eq "*") { "*" }                                   # 모든 파일 (확장자 없는 파일 포함)
+        elseif ($e -notlike "*.*") { "*." + $e.TrimStart('*','.') }
+        elseif ($e.StartsWith(".")) { "*" + $e }
+        else { $e }
+    })
+    $textExt = $textExt | Select-Object -Unique
+}
 $binExt  = @("*.class")
 $arcExt  = @("*.jar","*.war","*.ear","*.zip")
 $arcRegex = '\.(jar|war|ear|zip)$'
@@ -415,6 +440,50 @@ function Invoke-Scan([string]$scanRoot, [string]$outFile) {
     return $script:results.Count
 }
 
+# ---------- 확장자 인벤토리 (v9.1) ----------
+# "레거시 소스에 뭐가 들어 있는데, 그중 뭐가 조사 대상인가"를 먼저 보는 모드.
+# 조사는 하지 않는다. 미조사 확장자가 나오면 -AddExt 로 붙여서 다시 돌린다.
+function Invoke-Inventory([string]$scanRoot, [string]$outFile) {
+    $script:RootFull = (Resolve-Path $scanRoot).Path.TrimEnd('\')
+    $cov = @{}
+    foreach ($e in $textExt) { $cov[$e.TrimStart('*','.').ToLower()] = "텍스트" }
+    foreach ($e in $binExt)  { $cov[$e.TrimStart('*','.').ToLower()] = "class" }
+    foreach ($e in $arcExt)  { $cov[$e.TrimStart('*','.').ToLower()] = "아카이브" }
+
+    $files = Get-ChildItem -Path $scanRoot -Recurse -File -ErrorAction SilentlyContinue |
+             Where-Object { -not (Test-Excluded $_.FullName) }
+    $rows = New-Object System.Collections.Generic.List[object]
+    $files | Group-Object { $x = $_.Extension.TrimStart('.').ToLower(); if ($x) { $x } else { "(확장자없음)" } } |
+      ForEach-Object {
+        $ext = $_.Name
+        $hit = $cov[$ext]
+        $rows.Add([pscustomobject]@{
+            Ext      = $ext
+            Count    = $_.Count
+            SizeKB   = [int](($_.Group | Measure-Object Length -Sum).Sum / 1KB)
+            Scanned  = if ($hit) { "O" } else { "X" }
+            How      = if ($hit) { $hit } else { "미조사 — 필요하면 -AddExt $ext" }
+            Sample   = (Get-RelPath $_.Group[0].FullName)
+        })
+      }
+
+    $outParent = Split-Path $outFile -Parent
+    if ($outParent -and -not (Test-Path $outParent)) { New-Item -ItemType Directory -Path $outParent -Force | Out-Null }
+    $rows | Sort-Object Scanned, @{Expression="Count";Descending=$true} |
+      Export-Csv -Path $outFile -NoTypeInformation -Encoding UTF8
+
+    Write-Host "`n[$scanRoot] 파일 $($files.Count)개 / 확장자 $($rows.Count)종 -> $outFile"
+    Write-Host "  == 미조사 확장자 (필요하면 -AddExt 로 추가) =="
+    $miss = $rows | Where-Object { $_.Scanned -eq "X" } | Sort-Object Count -Descending
+    if ($miss) { $miss | Select-Object -First 25 |
+        ForEach-Object { Write-Host ("    {0,6}개  .{1,-12} 예: {2}" -f $_.Count, $_.Ext, $_.Sample) } }
+    else { Write-Host "    없음 — 전부 조사 대상" }
+    Write-Host "  == 조사 대상 확장자 =="
+    $rows | Where-Object { $_.Scanned -eq "O" } | Sort-Object Count -Descending | Select-Object -First 25 |
+      ForEach-Object { Write-Host ("    {0,6}개  .{1,-12} ({2})" -f $_.Count, $_.Ext, $_.How) }
+    return $rows.Count
+}
+
 # ---------- 실행 ----------
 if ($doArc) {
     Add-Type -AssemblyName System.IO.Compression
@@ -426,7 +495,7 @@ $scopeDesc = @{
     src   = "텍스트만, 빌드산출물 폴더 제외 (소스 증적)"
     build = "CLASS + 아카이브만 (재빌드 후 검증)"
 }
-Write-Host "===== Find-AsisPath v9 (Scope=$Scope) ====="
+Write-Host "===== Find-AsisPath v9.1 (Scope=$Scope) ====="
 Write-Host "검색 범위: $($scopeDesc[$Scope])"
 $kindDesc = ($kinds -join ', ')
 if ($kinds -contains 'path') { $kindDesc = $kindDesc + '  (Drives=' + $Drives + ')' }
@@ -434,6 +503,24 @@ Write-Host "탐지 종류: $kindDesc"
 if ($Hosts.Count -gt 0) { Write-Host "서버명    : $($Hosts -join ', ')" }
 Write-Host "제외 폴더: $($ExcludeDirs -join ', ')"
 Write-Host "제외 파일: $($ExcludeFiles -join ', ')"
+
+if ($Inventory) {
+    Write-Host "[Inventory 모드] 조사는 하지 않는다 — 확장자 분포와 조사대상 여부만 본다"
+    $invRoots = @()
+    if ($RootList) {
+        if (-not (Test-Path $RootList)) { Write-Error "소스 목록 파일 없음: $RootList"; exit 1 }
+        $invRoots = Get-Content $RootList | ForEach-Object { $_.Trim() } |
+                    Where-Object { $_ -and -not $_.StartsWith("#") }
+    } else { $invRoots = @($Root) }
+    foreach ($r in $invRoots) {
+        if (-not (Test-Path $r)) { Write-Warning "소스 없음, 건너뜀: $r"; continue }
+        $leaf = Split-Path ((Resolve-Path $r).Path.TrimEnd('\')) -Leaf
+        $outDir = Split-Path $Out -Parent
+        $invOut = if ($outDir) { Join-Path $outDir ($leaf + "_ext_inventory.dat") } else { $leaf + "_ext_inventory.dat" }
+        [void](Invoke-Inventory $r $invOut)
+    }
+    return
+}
 
 if ($RootList) {
     if (-not (Test-Path $RootList)) { Write-Error "소스 목록 파일 없음: $RootList"; exit 1 }
