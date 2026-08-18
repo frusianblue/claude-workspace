@@ -2,7 +2,7 @@
 
 | 파일 | 단계 | 역할 |
 |---|---|---|
-| `Find-AsisPath.ps1` (v9.1) | A-1 | 전수조사. `-Kind path,unc,ip,port,domain,host`, `-Scope all/src/build`, `-Inventory`(확장자 사각지대 확인), `-AddExt`, `-RootList` 일괄, jar/war 중첩 내부까지 |
+| `Find-AsisPath.ps1` (v9.3) | A-1 | 전수조사. `-Kind path,unc,ip,port,domain,host`, `-Scope all/src/build`, `-Inventory`, `-AddExt`, `-ExcludeJars`/`-ExcludeDomains`(노이즈 제외), `-RootList` 일괄, jar/war 중첩 내부까지 |
 | `Extract-MappingDraft.ps1` (v2) | A-2 | Find 리포트에서 매핑표 초안 추출 (`-Mode Path\|Ip\|Domain\|Port`) |
 | `Replace-AsisPath.ps1` (v4) | A-3 | 경로 치환(드라이브 + UNC/NAS). DryRun 기본, `-Apply` 시 자동 백업 |
 | `Replace-AsisIp.ps1` (v5) | A-4 | IP 치환. `-UsePort`로 `IP:포트` 규칙 우선 |
@@ -43,6 +43,20 @@
 | 확장자 없는 파일 (README, hosts) | X → `-AddExt "*"` |
 | dll/exe/ocx, 한글문서·xls, DB 안, 50MB 넘는 아카이브 엔트리 | X (별도 수단) |
 | `bak`/`backup` 폴더, `*.bak`/`*.back` 파일 | X (기본 제외, `-ExcludeDirs`/`-ExcludeFiles`로 조정) |
+| 알려진 OSS/벤더 jar (spring/commons/log4j/ojdbc/poi/xerces...) | X (기본 제외 — `-ExcludeJars`) |
+| 표준 스키마/네임스페이스 도메인 (w3.org, mybatis.org, apache.org, sun.com...) | X (기본 제외 — `-ExcludeDomains`) |
+
+**벤더 jar 제외**: `-ExcludeJars`(기본 80여 패턴)에 걸리는 jar는 최상위·중첩 모두 안 판다.
+벤더 jar 안의 매칭은 우리 소스가 아니라 재빌드로 못 고치고, 조치는 "jar 교체" 하나뿐이라 리포트만 부풀린다.
+무엇을 뺐는지는 콘솔과 **`<리포트명>_skipped_jars.dat`** 에 남는다 (조용히 사라지지 않는다).
+자체 jar가 걸러지면(`egov*`, `commons-사내*` 같은 이름) `-ExcludeJars` 로 목록을 직접 지정하고,
+전부 다 보려면 `-ExcludeJars @()` — 단 `-File` 실행에선 `@()`가 안 먹으니 `-ExcludeJars ""` 를 쓴다.
+
+**표준 도메인 제외**: DTD/XSD/`xmlns` 선언에서 나오는 `www.w3.org`, `mybatis.org`,
+`www.springframework.org`, `java.sun.com` 류는 배포 대상이 아니라 리포트에서 뺀다(`-ExcludeDomains`).
+판정은 *접미사 일치* — `apache.org` 하나로 `xml.apache.org`·`logging.apache.org`가 다 걸린다.
+역시 `_skipped.dat` 에 증적이 남고, 전부 보려면 `-ExcludeDomains ""`.
+도메인 탐지는 `jdbc:oracle:thin:@dbsvr.co.kr:1521` 의 `@` 뒤 호스트도 잡는다 (대신 메일주소 도메인도 같이 잡힌다).
 
 EUC-KR·UTF-8 섞인 레거시 소스여도 **검출은 영향 없다** (경로/IP/포트/도메인은 전부 ASCII).
 인코딩이 섞이면 리포트 `Match`(줄 전체) 열의 한글만 깨져 보인다 — `Value`/`Line`/`File`은 정확하다.

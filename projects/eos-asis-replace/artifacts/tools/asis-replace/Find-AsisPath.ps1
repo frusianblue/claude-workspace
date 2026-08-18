@@ -7,14 +7,14 @@
 #   입력 : -Root 소스 폴더 (또는 -RootList 목록 파일)
 #   출력 : report\<소스명>_asis_path_report.dat
 #   선행 : 없음 — 소스 1건의 첫 작업
-#   상태 : 현행 v9.1
+#   상태 : 현행 v9.3
 #
 #   공통 : 이 파일은 UTF-8 with BOM 으로 저장할 것 (PS 5.1은 BOM 없으면 MS949로 읽음)
 #          실행:  powershell -ExecutionPolicy Bypass -File .\<파일>.ps1 ...
 #          출력 확장자 .dat 유지 (회사 DRM의 csv/txt 자동 암호화 회피)
 #   전체 순서는 ..\README.md 참조
 # ===========================================================================
-# Find-AsisPath.ps1 (v9.1)
+# Find-AsisPath.ps1 (v9.3)
 #
 # ── Kind (무엇을 찾을지) — 지정 안 하면 path,unc ─────────────────────
 #   -Kind path    : 드라이브 경로  d:\eos, W:/data, Z:\\share (java 리터럴 포함)
@@ -63,6 +63,14 @@
 #       (2) -AddExt "jspf,inc,frm" — 목록에 없는 확장자 추가
 #       (3) -Inventory — 조사 전에 'Root 안에 어떤 확장자가 몇 개 있고, 그중 뭐가 조사 대상인지'만 출력
 #
+# v9.2: -ExcludeJars — 알려진 OSS/벤더 jar(spring/commons/log4j/ojdbc/poi...) 제외.
+#       중첩 jar에도 적용되고, 무엇을 뺐는지는 콘솔 + <리포트명>_skipped_jars.dat 로 증적이 남는다.
+#       전부 조사: -ExcludeJars @()   /  목록 직접 지정: -ExcludeJars "spring*,commons*"
+#
+# v9.3: -ExcludeDomains — DTD/XSD/xmlns 선언에서 나오는 표준 도메인(w3.org, mybatis.org,
+#       apache.org, sun.com ...) 제외. 제외 증적은 <리포트명>_skipped.dat 에 jar와 함께 남는다.
+#       전부 보려면 -ExcludeDomains ""
+#
 # 사용법: .\Find-AsisPath.ps1 -Root "C:\src" [-Kind all] [-Scope src] [-Out report.dat]
 #         .\Find-AsisPath.ps1 -Root "C:\src" -Inventory            # 먼저 이걸로 사각지대 확인
 # ===========================================================================
@@ -81,6 +89,32 @@ param(
     [string]$Out     = "report\asis_path_report.dat",
     [string[]]$ExcludeDirs = @(".git",".svn",".metadata","node_modules","bak","backup"),
     [string[]]$ExcludeFiles = @("*.bak","*.back"),   # 파일명 패턴 제외
+    # v9.2: 널리 알려진 OSS/벤더 jar 제외 (파일명 와일드카드, 중첩 jar에도 적용)
+    #   전부 조사하려면 -ExcludeJars @()  /  자체 jar가 걸러지면 -ExcludeJars 로 목록을 직접 지정
+    [string[]]$ExcludeJars = @(
+        "spring*","commons*","log4j*","slf4j*","logback*","jackson*","gson*","guava*",
+        "junit*","hamcrest*","mockito*","ant-*","maven-*","asm*","cglib*","aopalliance*",
+        "aspectj*","javassist*","servlet-api*","jsp-api*","jstl*","standard.jar","el-api*",
+        "javax.*","jakarta.*","jta*","jms*","activation*","mail.jar","xerces*","xalan*",
+        "xml-apis*","xmlbeans*","dom4j*","jdom*","jaxen*","jaxb*","saaj*","axis*","wsdl4j*",
+        "stax*","poi*","itext*","pdfbox*","fontbox*","batik*","jfreechart*","jcommon*",
+        "hibernate*","mybatis*","ibatis*","quartz*","velocity*","freemarker*","struts*",
+        "tiles*","sitemesh*","ehcache*","ojdbc*","classes12*","classes111*","mysql-connector*",
+        "mssql-jdbc*","jtds*","postgresql*","tibero*","cubrid*","altibase*","httpclient*",
+        "httpcore*","httpmime*","oro-*","ognl*","antlr*","bcprov*","bcpkix*","jsch*","json-*",
+        "joda-time*","egovframework-*","lucy-xss*","tomcat-*","catalina*","jasper*"
+    ),
+    # v9.3: 표준 스키마/네임스페이스 도메인 제외 (DTD·XSD·xmlns 선언에서 나오는 값)
+    #   판정: 값이 패턴과 같거나 '.패턴'으로 끝나면 제외 (mybatis.org, www.w3.org, xml.apache.org ...)
+    #   전부 보려면 -ExcludeDomains ""
+    [string[]]$ExcludeDomains = @(
+        "w3.org","apache.org","mybatis.org","springframework.org","sun.com","oracle.com",
+        "jcp.org","xmlsoap.org","xml.org","soapenv.org","jboss.org","hibernate.org","slf4j.org",
+        "quartz-scheduler.org","opensymphony.com","sourceforge.net","mozilla.org","w3schools.com",
+        "jquery.com","jsdelivr.net","cloudflare.com","googleapis.com","gstatic.com","google.com",
+        "github.com","github.io","npmjs.com","bootstrapcdn.com","microsoft.com","purl.org",
+        "dublincore.org","openoffice.org","egovframe.go.kr","egovframework.go.kr","example.com"
+    ),
     [string[]]$AddExt = @(),             # 조사할 확장자 추가. 예: -AddExt "jspf,inc,frm" / -AddExt "*.pc"
                                          #   -AddExt "*" = 확장자 없는 파일까지 전부 (class/jar도 텍스트로 한 번 더 스캔됨)
     [switch]$Inventory,                  # 조사 안 하고, Root 안의 확장자 분포 + 조사대상 여부만 출력
@@ -107,6 +141,8 @@ $DomainSuffix = Split-ListArg $DomainSuffix
 $ExcludeDirs  = Split-ListArg $ExcludeDirs
 $ExcludeFiles = Split-ListArg $ExcludeFiles
 $AddExt       = Split-ListArg $AddExt
+$ExcludeJars    = Split-ListArg $ExcludeJars
+$ExcludeDomains = Split-ListArg $ExcludeDomains
 
 $KindAllowed = @("path","unc","ip","port","domain","host","all")
 foreach ($k in $Kind) {
@@ -195,9 +231,11 @@ function New-KindPattern([string[]]$kinds) {
     if ($kinds -contains "domain") {
         $sfx = (($DomainSuffix | Where-Object { $_ } | Sort-Object { $_.Length } -Descending |
                  ForEach-Object { [regex]::Escape($_.Trim()) }) -join '|')
-        # 앞 경계에 / \ 를 넣지 않는다 — http://host, \\nas\host 안의 호스트도 잡아야 한다
+        # 앞 경계에 / \ @ 를 넣지 않는다 — http://host, \\nas\host,
+        # jdbc:oracle:thin:@dbsvr.company.co.kr:1521 의 호스트까지 잡아야 한다
+        # (@ 를 막으면 jdbc thin URL의 DB 호스트를 통째로 놓친다. 대신 메일주소의 도메인도 같이 잡힌다)
         # (path/unc Kind가 켜져 있으면 경로 토큰이 먼저 통째로 소비되므로 파일명 오탐은 나지 않는다)
-        $alts.Add('(?<domain>(?<![\w.\-@])(?:[A-Za-z0-9](?:[A-Za-z0-9\-]*[A-Za-z0-9])?\.)+(?:' +
+        $alts.Add('(?<domain>(?<![\w.\-])(?:[A-Za-z0-9](?:[A-Za-z0-9\-]*[A-Za-z0-9])?\.)+(?:' +
                   $sfx + ')(?!\.?[A-Za-z0-9]))')
     }
     # 5) 서버명 직접 지정
@@ -262,6 +300,38 @@ function Test-Excluded([string]$path) {
     return $false
 }
 
+# v9.2/9.3: 제외 증적 — 무엇을 걸렀는지 항상 남긴다 (<리포트명>_skipped.dat)
+$script:SkippedArc = @{}
+$script:SkippedDom = @{}
+
+# v9.3: 표준 스키마/네임스페이스 도메인인가 (w3.org, mybatis.org, xml.apache.org ...)
+function Test-ExcludedDomain([string]$value) {
+    if ($ExcludeDomains.Count -eq 0) { return $false }
+    $v = $value.ToLower().TrimEnd('.')
+    foreach ($pat in $ExcludeDomains) {
+        $p = $pat.ToLower()
+        $hit = if ($p.Contains("*")) { $v -like $p } else { ($v -eq $p) -or $v.EndsWith("." + $p) }
+        if ($hit) {
+            if ($script:SkippedDom.ContainsKey($v)) { $script:SkippedDom[$v]++ } else { $script:SkippedDom[$v] = 1 }
+            return $true
+        }
+    }
+    return $false
+}
+
+function Test-ExcludedArchive([string]$nameOrPath) {
+    if ($ExcludeJars.Count -eq 0) { return $false }
+    $leaf = ($nameOrPath -split '[\\/]')[-1]
+    foreach ($pat in $ExcludeJars) {
+        if ($leaf -like $pat) {
+            if ($script:SkippedArc.ContainsKey($leaf)) { $script:SkippedArc[$leaf]++ }
+            else { $script:SkippedArc[$leaf] = 1 }
+            return $true
+        }
+    }
+    return $false
+}
+
 function Get-RelPath([string]$path) {
     if ($path.StartsWith($script:RootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
         return $path.Substring($script:RootFull.Length).TrimStart('\')
@@ -317,6 +387,8 @@ function Get-Action([string]$foundIn) {
 
 function Add-Result([string]$foundIn, [string]$container, [string]$file, [string]$entry,
                     [string]$line, [string]$kind, [string]$value, [string]$match) {
+    # 표준 스키마 도메인(w3.org, mybatis.org 등)은 리포트에 넣지 않는다 — 집계만 한다
+    if ($kind -eq "domain" -and (Test-ExcludedDomain $value)) { return }
     $rel = Get-RelPath $file
     $relDir = Split-Path $rel -Parent
     $script:results.Add([pscustomobject]@{
@@ -345,6 +417,7 @@ function Search-Archive([System.IO.Stream]$stream, [string]$file, [string]$conta
         foreach ($e in $zip.Entries) {
             if ($e.Length -eq 0 -or $e.Length -gt 50MB) { continue }
             if ($e.FullName -match $arcRegex) {
+                if (Test-ExcludedArchive $e.FullName) { continue }   # 벤더 jar는 안 파고든다
                 $ms = New-Object System.IO.MemoryStream
                 $es = $e.Open(); $es.CopyTo($ms); $es.Close()
                 $ms.Position = 0
@@ -368,6 +441,8 @@ function Search-Archive([System.IO.Stream]$stream, [string]$file, [string]$conta
 function Invoke-Scan([string]$scanRoot, [string]$outFile) {
     $script:RootFull = (Resolve-Path $scanRoot).Path.TrimEnd('\')
     $script:results = New-Object System.Collections.Generic.List[object]
+    $script:SkippedArc = @{}
+    $script:SkippedDom = @{}
 
     # 1) 텍스트 파일 — Select-String 이 인코딩 판정과 줄번호를 처리한다
     if ($doText) {
@@ -399,7 +474,7 @@ function Invoke-Scan([string]$scanRoot, [string]$outFile) {
     # 3) jar/war/ear/zip (중첩 포함)
     if ($doArc) {
     Get-ChildItem -Path $scanRoot -Recurse -File -Include $arcExt -ErrorAction SilentlyContinue |
-      Where-Object { -not (Test-Excluded $_.FullName) } |
+      Where-Object { -not (Test-Excluded $_.FullName) -and -not (Test-ExcludedArchive $_.Name) } |
       ForEach-Object {
         $fs = [System.IO.File]::OpenRead($_.FullName)
         Search-Archive $fs $_.FullName $_.Name
@@ -432,6 +507,23 @@ function Invoke-Scan([string]$scanRoot, [string]$outFile) {
         Write-Host "  == Container별 (아카이브 내부 매칭) =="
         $inArc | Group-Object Container | Sort-Object Count -Descending |
           ForEach-Object { Write-Host ("    {0,6}건  {1}" -f $_.Count, $_.Name) }
+    }
+    # 제외 증적 — jar/도메인을 뭘 걸렀는지 한 파일로
+    $skipRows = New-Object System.Collections.Generic.List[object]
+    foreach ($k in ($script:SkippedArc.Keys | Sort-Object)) {
+        $skipRows.Add([pscustomobject]@{ Type="jar"; Name=$k; Hits=$script:SkippedArc[$k]; Why="-ExcludeJars" }) }
+    foreach ($k in ($script:SkippedDom.Keys | Sort-Object)) {
+        $skipRows.Add([pscustomobject]@{ Type="domain"; Name=$k; Hits=$script:SkippedDom[$k]; Why="-ExcludeDomains" }) }
+    if ($skipRows.Count -gt 0) {
+        $skFile = $outFile -replace '\.dat$','_skipped.dat'
+        $skipRows | Export-Csv -Path $skFile -NoTypeInformation -Encoding UTF8
+        $arcN = @($skipRows | Where-Object { $_.Type -eq "jar" })
+        $domN = @($skipRows | Where-Object { $_.Type -eq "domain" })
+        Write-Host "  == 제외 (증적: $skFile) =="
+        if ($arcN.Count -gt 0) {
+            Write-Host ("    벤더 jar {0}종: {1}" -f $arcN.Count, (($arcN.Name | Select-Object -First 10) -join ", ")) }
+        if ($domN.Count -gt 0) {
+            Write-Host ("    표준 도메인 {0}종: {1}" -f $domN.Count, (($domN.Name | Select-Object -First 10) -join ", ")) }
     }
     Write-Host "  == 위치(Category)별 =="
     $script:results | Group-Object Category | Sort-Object Count -Descending |
@@ -478,6 +570,16 @@ function Invoke-Inventory([string]$scanRoot, [string]$outFile) {
     if ($miss) { $miss | Select-Object -First 25 |
         ForEach-Object { Write-Host ("    {0,6}개  .{1,-12} 예: {2}" -f $_.Count, $_.Ext, $_.Sample) } }
     else { Write-Host "    없음 — 전부 조사 대상" }
+    # 아카이브는 따로 — 어떤 jar가 제외되는지 미리 본다
+    $arcs = $files | Where-Object { $_.Name -match $arcRegex }
+    if ($arcs) {
+        $arcIn  = @($arcs | Where-Object { -not (Test-ExcludedArchive $_.Name) })
+        $arcOut = @($arcs | Where-Object { Test-ExcludedArchive $_.Name })
+        Write-Host "  == 아카이브 $($arcs.Count)개 — 조사 $($arcIn.Count) / 제외 $($arcOut.Count) (-ExcludeJars) =="
+        $arcIn | Select-Object -First 20 | ForEach-Object { Write-Host ("    [조사] " + $_.Name) }
+        if ($arcIn.Count -gt 20) { Write-Host "    ... 외 $($arcIn.Count - 20)개" }
+        if ($arcOut.Count -gt 0) { Write-Host ("    [제외] " + (($arcOut.Name | Select-Object -Unique | Select-Object -First 20) -join ", ")) }
+    }
     Write-Host "  == 조사 대상 확장자 =="
     $rows | Where-Object { $_.Scanned -eq "O" } | Sort-Object Count -Descending | Select-Object -First 25 |
       ForEach-Object { Write-Host ("    {0,6}개  .{1,-12} ({2})" -f $_.Count, $_.Ext, $_.How) }
@@ -495,7 +597,7 @@ $scopeDesc = @{
     src   = "텍스트만, 빌드산출물 폴더 제외 (소스 증적)"
     build = "CLASS + 아카이브만 (재빌드 후 검증)"
 }
-Write-Host "===== Find-AsisPath v9.1 (Scope=$Scope) ====="
+Write-Host "===== Find-AsisPath v9.3 (Scope=$Scope) ====="
 Write-Host "검색 범위: $($scopeDesc[$Scope])"
 $kindDesc = ($kinds -join ', ')
 if ($kinds -contains 'path') { $kindDesc = $kindDesc + '  (Drives=' + $Drives + ')' }
