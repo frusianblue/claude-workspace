@@ -7,7 +7,7 @@
 <!-- INDEX:START -->
 | 프로젝트 | 상태 | 최근 작업 | 다음 행동 |
 |---|---|---|---|
-| [mar-eos-encoding](projects/eos-asis-replace) | 🟢 active | [2026-08-18](projects/eos-asis-replace/handoffs/2026-08-18c.md) | Get-MappedDrives -FromNetUse netuse.dat -Tag 모바일DM -EmitMapping 로 mapping\ 산출물 한글 확인 (8/18b 미해결 2번) → 이어서 정리 3건 패치 |
+| [mar-eos-encoding](projects/eos-asis-replace) | 🟢 active | [2026-08-19](projects/eos-asis-replace/handoffs/2026-08-19.md) | 실소스에 Find v9.8 재실행(기준선 1829건 대조) → Extract -Mode Path 를 -Depth 2 / -Depth 0 두 번 돌려 접힘 구간 확인 → 매핑표 New 열 작성 |
 | [ai-agent-proto](projects/ai-agent-proto) | 🟢 active | [2026-07-19](projects/ai-agent-proto/handoffs/2026-07-19.md) | Debug 탭에서 두 앱 프로세스 생존 확인 (포트 점유 의심, Port already in use 로그) |
 <!-- INDEX:END -->
 
