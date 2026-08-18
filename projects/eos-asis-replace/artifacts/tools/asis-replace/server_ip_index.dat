@@ -1,0 +1,145 @@
+﻿# 서버이관 IP 인덱스 — 서버이관_통합정보.xlsx 에서 생성 (구분자 |)
+# 생성일 2026-08-19 / 원본시트: 운영_통합정보, 개발_통합정보
+# 대응IP = ASIS행이면 TO-BE IP, TOBE행이면 AS-IS IP
+# 편집은 메모장으로. 엑셀 열기는 텍스트 마법사에서 구분자 | 지정
+IP|환경|단계|종류|시스템|구분|서버명|업무코드|업무명|PORT|URL|Instance|담당|대응IP|비고
+10.10.88.24|개발|ASIS|IP|고객안내자료심의|WEB|dz-cfsystem|CFS|고객안내자료심의 (SSO)|80 / 443||WDCFS11||10.10.86.216|WEB/WAS 동일 서버
+10.10.88.24|개발|ASIS|IP|고객안내자료심의|WAS|dz-cfsystem|CFS|고객안내자료심의 (SSO)|10800 / 11163||WDCFS11||10.10.86.216|WEB/WAS 동일 서버
+10.10.88.135|개발|ASIS|IP|모바일DM|WAS|DZ-MIDMWAS|DIM;MAH;LTC;AHP;AHV;VIE|모바일DM;모바일사고조회;장기계약변경서류전송;모바일사고조회 사진업로드;모바일사고조회 동영상업로드;웹뷰|17970 / 18333;17990 / 18353;17800 / 18163;17810 / 18173;17820 / 18183;17980 / 18343||WDDIM11;WDMAH11;WDLTC11;WDAHP11;WDAHV11;WDVIE11||10.10.91.81|솔루션
+10.10.88.135|개발|ASIS|IP|비대면전자서식|WAS|DZ-MIDMWAS|NSS|비대면전자서식|9086 / 9449||WDNSS11||10.10.91.81|
+10.10.88.136|개발|ASIS|IP|모바일주행거리|WAS|DEV-SMARTWAP|MCE;MMX|영업용모바일고객컨텐츠및전자서명;모바일주행거리블랙박스|||||10.10.91.160|TO-BE PORT/Instance 미기재
+10.10.88.138|개발|ASIS|IP|모바일CSI|WAS|DZ-MCSIWAS|MCS;MSR;MAI;ADA;MOP;MPR;WDF|모바일CSI;모바일CSI관리자;모바일사고조사;모바일사고조사관리자;모바일포탈;모바일포탈관리자;앱위변조관리자(AAPlus)|9080 / 9443;10810 / 11173;10850 / 11213;10860 / 11223;10830 / 11193;10840 / 11203;9082 / 9445||WDMCS11;WDMSR11;WDMAI11;WDADA11;WDMOP11;WDMPR11;WDWDF11||10.10.91.78|Windows;Windows 취소선(폐기)
+10.10.88.138|개발|ASIS|IP|모바일CSI|WEB|DZ-MCSIWAS|MSR;ADA;MPR|모바일CSI관리자;모바일사고조사관리자;모바일포탈관리자|8000 / 8363;85 / 448;8100 / 8463||WDMSR11;WDADA11;WDMPR11||10.10.91.78|Windows
+10.10.88.139|개발|ASIS|IP|모바일디빈스|WAS|DZ-WMDBWAS|MDB;MAR;AGW;AAD|모바일디빈스;모바일디빈스관리자;앱위변조(Appiron);앱위변조관리자|10800 / 11163;10810 / 11173;10820 / 11183;10830 / 11193||WDMDB11;WDMAR11;WDAGW11;WDAAD11||10.10.86.217|솔루션
+10.10.88.139|개발|ASIS|IP|모바일디빈스|WEB|DZ-WMDBWAS|MAR;AAD|모바일디빈스관리자;앱위변조관리자|8100 / 8463;8300 / 8663||WDMAR11;WDAAD11||10.10.86.217|솔루션
+10.10.88.140|개발|ASIS|IP|보상모바일|WAS|DZ-MCPSWAS|MCL;MCA;AGW;AAD;HFM|보상모바일;보상모바일관리자;보상모바일앱위변조;보상모바일앱위변조관리자;보상모바일전자서식|10800 / 11163;10820 / 11183;10830 / 11193;10840 / 11203;10810 / 11173||WDMCL11;WDMCA11;WDAWG11;WDAAD11;WDHFM11||10.10.91.86|솔루션
+10.10.88.140|개발|ASIS|IP|보상모바일|WEB|DZ-MCPSWAS|MCA;AAD|보상모바일관리자;보상모바일앱위변조관리자|87 / 450;90 / 453||WDMCA11;WDAAD11||10.10.91.86|솔루션
+10.10.88.140|개발|ASIS|IP|보상PRM|WAS|DZ-MCPSWAS|CPR;PRD|보상PRM;보상PRMRD|10850 / 11213;10880 / 11243||WDCPR11;WDPRD11||10.10.91.86|솔루션
+10.10.88.164|개발|ASIS|IP|총무지원|WEB|d1gptwb1|LGS;LPR;CDM;GPT;CGS|법무지원 (SSO);변호사PRM;스마트공시지원 (SSO);스마트총무지원 (SSO);위탁관리 (SSO)|8080 / -;8090 / 8443;8480 / 8483;80 / 443;- / 2443||DZLMS;DZLMS_PRM;WDCDM11;GAPT_D11;DZSCFY||10.10.91.102|Linux;Linux 내부
+10.10.88.164|개발|ASIS|IP|총무지원|WEB|d1gptwb1 / d1gptewb1|RLM|부동산임차관리 (SSO)|9080 / 9443||WDRLM11||10.10.91.102|Linux TO-BE PORT 9903 중복
+10.10.88.170|개발|ASIS|IP|통합푸쉬|WAS|DZ-MTPSWAS|MTP|통합푸쉬|10800 / 11163||WDMTP11||10.10.86.229|TO-BE IP 대역 확인필요
+10.10.88.181|개발|ASIS|IP|총무지원|WAS|d1gptws1|LGS;LPR;RLM;CDM;GPT;CGS|법무지원 (SSO);변호사PRM;부동산임차관리 (SSO);스마트공시지원 (SSO);스마트총무지원 (SSO);위탁관리 (SSO)|9902;9903;9904;9900;9901||DZLMS;DZLMS_PRM;WDRLM11;WDCDM11;GAPT_D11;DZSCFY||10.10.91.101|Linux;Linux TO-BE PORT 9903 중복;Linux 내부;Linux 외부
+10.10.88.195|개발|ASIS|IP|보상PRM|WEB|DZ-WPRMWEB|CPR;PRD|보상PRM;보상PRMRD|80 / 443;8000 / 8363||WDCPR11;WDPRD11||10.10.91.83|솔루션
+10.88.23.23|개발|ASIS|IP|모바일주행거리|WEB|DEV-SMARTWEB|MCE;MMX|영업용모바일고객컨텐츠및전자서명;모바일주행거리블랙박스|8085 / 8448;8084 / 8447||||10.88.22.114|TO-BE PORT/Instance 미기재
+10.88.23.27|개발|ASIS|IP|모바일CSI|WEB|DZ-MCSIWEB|MCS;MAI;MOP|모바일CSI;모바일사고조사;모바일포탈|80 / 443;2080 / 2443;8100 / 8463||WDMCS11;WDMAI11;WDMOP11||10.88.22.178|Windows
+10.88.23.30|개발|ASIS|IP|모바일디빈스|WEB|DZ-WMDBWEB|MDB;AGW|모바일디빈스;앱위변조(Appiron)|80 / 443;8200 / 8563||WDMDB11;WDAGW11||10.88.22.113|솔루션
+10.88.23.33|개발|ASIS|IP|모바일DM|WEB|DZ-MIDMWEB|DIM;MAH;LTC;AHP;AHV;VIE|모바일DM;모바일사고조회;장기계약변경서류전송;모바일사고조회 사진업로드;모바일사고조회 동영상업로드;웹뷰|80 / 442;8010 / 443;8050 / 8443;8051 / 8444||WDDIM11;WDMAH11;WDLTC11;WDAHP11;WDAHV11;WDVIE11||10.88.22.181|솔루션
+10.88.23.33|개발|ASIS|IP|비대면전자서식|WEB|DZ-MIDMWEB|NSS|비대면전자서식|8040 / 8403||WDNSS11||10.88.22.181|
+10.88.23.39|개발|ASIS|IP|보상모바일|WEB|DZ-MCPSWEB|MCL;AGW;HFM|보상모바일;보상모바일앱위변조;보상모바일전자서식|80 / 443;89 / 452;81 / 444||WDMCL11;WDAWG11;WDHFM11||10.88.22.182|솔루션
+10.88.23.41|개발|ASIS|IP|통합푸쉬|WEB|DZ-MTPSWEB|MTP|통합푸쉬|80 / 443||WDMTP11||10.88.23.32|TO-BE IP 대역 확인필요
+10.88.23.47|개발|ASIS|IP|총무지원|WEB|d1gptewb1|GPT;CGS|스마트총무지원 (SSO);위탁관리 (SSO)|80 / 443;- / 443||GAPT_D11;DZSCFY||10.88.22.187|Linux 외부
+10.10.86.216|개발|TOBE|IP|고객안내자료심의|WEB|dz-cfsystem|CFS|고객안내자료심의 (SSO)|80 / 443||WDCFS11||10.10.88.24|WEB/WAS 동일 서버
+10.10.86.216|개발|TOBE|IP|고객안내자료심의|WAS|dz-cfsystem|CFS|고객안내자료심의 (SSO)|10800 / 11163||WDCFS11||10.10.88.24|WEB/WAS 동일 서버
+10.10.86.217|개발|TOBE|IP|모바일디빈스|WAS|DZ-WMDBWAS|MDB;MAR;AGW;AAD|모바일디빈스;모바일디빈스관리자;앱위변조(Appiron);앱위변조관리자|10800 / 11163;10810 / 11173;10820 / 11183;10830 / 11193||WDMDB11;WDMAR11;WDAGW11;WDAAD11||10.10.88.139|솔루션
+10.10.86.217|개발|TOBE|IP|모바일디빈스|WEB|DZ-WMDBWAS|MAR;AAD|모바일디빈스관리자;앱위변조관리자|8100 / 8463;8300 / 8663||WDMAR11;WDAAD11||10.10.88.139|솔루션
+10.10.86.229|개발|TOBE|IP|통합푸쉬|WAS|DZ-MTPSWAS|MTP|통합푸쉬|10800 / 11163||WDMTP11||10.10.88.170|TO-BE IP 대역 확인필요
+10.10.91.78|개발|TOBE|IP|모바일CSI|WAS|DZ-MCSIWAS|MCS;MSR;MAI;ADA;MOP;MPR;WDF|모바일CSI;모바일CSI관리자;모바일사고조사;모바일사고조사관리자;모바일포탈;모바일포탈관리자;앱위변조관리자(AAPlus)|9080 / 9443;10810 / 11173;10850 / 11213;10860 / 11223;10830 / 11193;10840 / 11203;9082 / 9445||WDMCS11;WDMSR11;WDMAI11;WDADA11;WDMOP11;WDMPR11;WDWDF11||10.10.88.138|Windows;Windows 취소선(폐기)
+10.10.91.78|개발|TOBE|IP|모바일CSI|WEB|DZ-MCSIWAS|MSR;ADA;MPR|모바일CSI관리자;모바일사고조사관리자;모바일포탈관리자|8000 / 8363;85 / 448;8100 / 8463||WDMSR11;WDADA11;WDMPR11||10.10.88.138|Windows
+10.10.91.81|개발|TOBE|IP|모바일DM|WAS|DZ-MIDMWAS|DIM;MAH;LTC;AHP;AHV;VIE|모바일DM;모바일사고조회;장기계약변경서류전송;모바일사고조회 사진업로드;모바일사고조회 동영상업로드;웹뷰|17970 / 18333;17990 / 18353;17800 / 18163;17810 / 18173;17820 / 18183;17980 / 18343||WDDIM11;WDMAH11;WDLTC11;WDAHP11;WDAHV11;WDVIE11||10.10.88.135|솔루션
+10.10.91.81|개발|TOBE|IP|비대면전자서식|WAS|DZ-MIDMWAS|NSS|비대면전자서식|9086 / 9449||WDNSS11||10.10.88.135|
+10.10.91.83|개발|TOBE|IP|보상PRM|WEB|DZ-WPRMWEB|CPR;PRD|보상PRM;보상PRMRD|80 / 443;8000 / 8363||WDCPR11;WDPRD11||10.10.88.195|솔루션
+10.10.91.86|개발|TOBE|IP|보상모바일|WAS|DZ-MCPSWAS|MCL;MCA;AGW;AAD;HFM|보상모바일;보상모바일관리자;보상모바일앱위변조;보상모바일앱위변조관리자;보상모바일전자서식|10800 / 11163;10820 / 11183;10830 / 11193;10840 / 11203;10810 / 11173||WDMCL11;WDMCA11;WDAWG11;WDAAD11;WDHFM11||10.10.88.140|솔루션
+10.10.91.86|개발|TOBE|IP|보상모바일|WEB|DZ-MCPSWAS|MCA;AAD|보상모바일관리자;보상모바일앱위변조관리자|87 / 450;90 / 453||WDMCA11;WDAAD11||10.10.88.140|솔루션
+10.10.91.86|개발|TOBE|IP|보상PRM|WAS|DZ-MCPSWAS|CPR;PRD|보상PRM;보상PRMRD|10850 / 11213;10880 / 11243||WDCPR11;WDPRD11||10.10.88.140|솔루션
+10.10.91.101|개발|TOBE|IP|총무지원|WAS|d1gptws1|LGS;LPR;RLM;CDM;GPT;CGS|법무지원 (SSO);변호사PRM;부동산임차관리 (SSO);스마트공시지원 (SSO);스마트총무지원 (SSO);위탁관리 (SSO)|9902;9903;9904;9900;9901||DZLMS;DZLMS_PRM;WDRLM11;WDCDM11;GAPT_D11;DZSCFY||10.10.88.181|Linux;Linux TO-BE PORT 9903 중복;Linux 내부;Linux 외부
+10.10.91.102|개발|TOBE|IP|총무지원|WEB|d1gptwb1|LGS;LPR;CDM;GPT;CGS|법무지원 (SSO);변호사PRM;스마트공시지원 (SSO);스마트총무지원 (SSO);위탁관리 (SSO)|8080 / -;8090 / 8443;8480 / 8483;80 / 443;- / 2443||DZLMS;DZLMS_PRM;WDCDM11;GAPT_D11;DZSCFY||10.10.88.164|Linux;Linux 내부
+10.10.91.102|개발|TOBE|IP|총무지원|WEB|d1gptwb1 / d1gptewb1|RLM|부동산임차관리 (SSO)|9080 / 9443||WDRLM11||10.10.88.164|Linux TO-BE PORT 9903 중복
+10.10.91.160|개발|TOBE|IP|모바일주행거리|WAS|DEV-SMARTWAP|MCE;MMX|영업용모바일고객컨텐츠및전자서명;모바일주행거리블랙박스|||||10.10.88.136|TO-BE PORT/Instance 미기재
+10.88.22.113|개발|TOBE|IP|모바일디빈스|WEB|DZ-WMDBWEB|MDB;AGW|모바일디빈스;앱위변조(Appiron)|80 / 443;8200 / 8563||WDMDB11;WDAGW11||10.88.23.30|솔루션
+10.88.22.114|개발|TOBE|IP|모바일주행거리|WEB|DEV-SMARTWEB|MCE;MMX|영업용모바일고객컨텐츠및전자서명;모바일주행거리블랙박스|8085 / 8448;8084 / 8447||||10.88.23.23|TO-BE PORT/Instance 미기재
+10.88.22.178|개발|TOBE|IP|모바일CSI|WEB|DZ-MCSIWEB|MCS;MAI;MOP|모바일CSI;모바일사고조사;모바일포탈|80 / 443;2080 / 2443;8100 / 8463||WDMCS11;WDMAI11;WDMOP11||10.88.23.27|Windows
+10.88.22.181|개발|TOBE|IP|모바일DM|WEB|DZ-MIDMWEB|DIM;MAH;LTC;AHP;AHV;VIE|모바일DM;모바일사고조회;장기계약변경서류전송;모바일사고조회 사진업로드;모바일사고조회 동영상업로드;웹뷰|80 / 442;8010 / 443;8050 / 8443;8051 / 8444||WDDIM11;WDMAH11;WDLTC11;WDAHP11;WDAHV11;WDVIE11||10.88.23.33|솔루션
+10.88.22.181|개발|TOBE|IP|비대면전자서식|WEB|DZ-MIDMWEB|NSS|비대면전자서식|8040 / 8403||WDNSS11||10.88.23.33|
+10.88.22.182|개발|TOBE|IP|보상모바일|WEB|DZ-MCPSWEB|MCL;AGW;HFM|보상모바일;보상모바일앱위변조;보상모바일전자서식|80 / 443;89 / 452;81 / 444||WDMCL11;WDAWG11;WDHFM11||10.88.23.39|솔루션
+10.88.22.187|개발|TOBE|IP|총무지원|WEB|d1gptewb1|GPT;CGS|스마트총무지원 (SSO);위탁관리 (SSO)|80 / 443;- / 443||GAPT_D11;DZSCFY||10.88.23.47|Linux 외부
+10.88.23.32|개발|TOBE|IP|통합푸쉬|WEB|DZ-MTPSWEB|MTP|통합푸쉬|80 / 443||WDMTP11||10.88.23.41|TO-BE IP 대역 확인필요
+10.10.17.27|운영|ASIS|IP|통합푸쉬|WAS|PZ-MTPSWAS1/2|||||||10.10.91.125|
+10.10.17.28|운영|ASIS|IP|통합푸쉬|WAS|PZ-MTPSWAS1/2|||||||10.10.91.126|
+10.10.17.99|운영|ASIS|IP|총무지원|WEB|p1gptiwb1/2|LGS;RLM;CDM;GPT;CGS|법무지원;부동산임차관리;스마트공시지원;스마트총무지원;위탁관리|8080 / -;9080 / 9443;8480 / 8483;80 / 443;- / 2443|http://dblaw.dbins.co.kr:8080;https://rlm.mdbins.net:9443 (내부);http://iss.dbins.co.kr:8483;http://iss.dbins.co.kr (내부);https://cic.dbins.net:2443 (내부)||한지효 / 유일한;정수영 / 정수영;송준규 / 정수영;강종구 / 정수영;롯데정보통신 / 박영주|10.10.89.73|OS: Linux
+10.10.17.100|운영|ASIS|IP|총무지원|WEB|p1gptiwb1/2|LGS;RLM;CDM;GPT;CGS|법무지원;부동산임차관리;스마트공시지원;스마트총무지원;위탁관리|8080 / -;9080 / 9443;8480 / 8483;80 / 443;- / 2443|http://dblaw.dbins.co.kr:8080;https://rlm.mdbins.net:9443 (내부);http://iss.dbins.co.kr:8483;http://iss.dbins.co.kr (내부);https://cic.dbins.net:2443 (내부)||한지효 / 유일한;정수영 / 정수영;송준규 / 정수영;강종구 / 정수영;롯데정보통신 / 박영주|10.10.89.74|OS: Linux
+10.10.18.172|운영|ASIS|IP|고객안내자료심의|WEB|pz-wcfsws1|CFS|고객안내자료심의|80 / 443|http://agc.dbins.co.kr||이세영 / 유일한|10.10.91.60|WEB/WAS 동일 서버
+10.10.18.172|운영|ASIS|IP|고객안내자료심의|WAS|pz-wcfsws1|||||||10.10.91.60|
+10.10.61.27|운영|ASIS|IP|모바일주행거리|WAS|PZ-MSMTWAS1/2|||||||10.10.91.76|
+10.10.61.28|운영|ASIS|IP|모바일주행거리|WAS|PZ-MSMTWAS1/2|||||||10.10.91.77|
+10.10.77.49|운영|ASIS|IP|보상PRM|WEB|PZ-WPRMWEB1/2|CPR;PRD|보상PRM;보상PRMRD|80 / 443;8000 / 8043|https://prm.dbins.co.kr;https://prm.dbins.co.kr:8043||김계원 / 김태은;솔루션|10.10.89.47|
+10.10.77.50|운영|ASIS|IP|보상PRM|WEB|PZ-WPRMWEB1/2|CPR;PRD|보상PRM;보상PRMRD|80 / 443;8000 / 8043|https://prm.dbins.co.kr;https://prm.dbins.co.kr:8043||김계원 / 김태은;솔루션|10.10.89.48|
+10.10.150.33|운영|ASIS|IP|모바일DM|WAS|PZ-MIDMWAS1/2|||||||10.10.91.79|
+10.10.150.34|운영|ASIS|IP|모바일DM|WAS|PZ-MIDMWAS1/2|||||||10.10.91.80|
+10.10.150.39|운영|ASIS|IP|보상모바일|WAS|PZ-MCPSWAS1/2|MCA;AAD|보상모바일관리자;보상모바일앱위변조관리자|87 / 450;90 / 453|http://mobileeclaimadm.dbins.co.kr:9082;http://10.10.150.39:9084||한창훈 / 한창훈;솔루션|10.10.91.84|
+10.10.150.39|운영|ASIS|IP|보상PRM|WAS|PZ-MCPSWAS1/2|||||||10.10.91.84|
+10.10.150.40|운영|ASIS|IP|보상모바일|WAS|PZ-MCPSWAS1/2|MCA;AAD|보상모바일관리자;보상모바일앱위변조관리자|87 / 450;90 / 453|http://mobileeclaimadm.dbins.co.kr:9082;http://10.10.150.39:9084||한창훈 / 한창훈;솔루션|10.10.91.85|
+10.10.150.40|운영|ASIS|IP|보상PRM|WAS|PZ-MCPSWAS1/2|||||||10.10.91.85|
+10.10.150.49|운영|ASIS|IP|총무지원|WAS|p1gptws1/2|||||||10.10.91.103|
+10.10.150.50|운영|ASIS|IP|총무지원|WAS|p1gptws1/2|||||||10.10.91.104|
+10.10.150.117|운영|ASIS|IP|모바일CSI|WAS|PZ-MCSIWAS1/2|MSR;ADA;MPR|모바일CSI관리자;모바일사고조사관리자;모바일포탈관리자|8000 / 8363;85 / 448;8100 / 8463|||김연수 / 장영민;안정진 / 장영민|10.10.89.38|
+10.10.150.118|운영|ASIS|IP|모바일CSI|WAS|PZ-MCSIWAS1/2|MSR;ADA;MPR|모바일CSI관리자;모바일사고조사관리자;모바일포탈관리자|8000 / 8363;85 / 448;8100 / 8463|||김연수 / 장영민;안정진 / 장영민|10.10.89.39|
+10.10.150.126|운영|ASIS|IP|모바일디빈스|WAS|PZ-WMDBWAS1/2|MAR;AAD|모바일디빈스관리자;앱위변조관리자|8100 / 8463;8300 / 8663|||안정진 / 장영민;솔루션|10.10.89.41|
+10.10.150.127|운영|ASIS|IP|모바일디빈스|WAS|PZ-WMDBWAS1/2|MAR;AAD|모바일디빈스관리자;앱위변조관리자|8100 / 8463;8300 / 8663|||안정진 / 장영민;솔루션|10.10.89.42|
+210.124.234.111|운영|ASIS|VIP|모바일디빈스|WEB|PZ-WMDBWEB1/2|MDB;AGW|모바일디빈스;앱위변조(Appiron)|80 / 443;8210 / 8200|https://dboffice.mdbins.com:443;https://dboffice.mdbins.com:8200||안정진;솔루션|10.88.22.153|★주황
+210.124.234.129|운영|ASIS|VIP|통합푸쉬|WEB|PZ-MTPSWEB1/2|MTP|통합푸쉬|80 / 443|https://push.mdbins.com||김태혁 / 장영민|10.88.22.156|
+210.124.234.137|운영|ASIS|IP|모바일DM|WEB|PZ-MIDMWEB1/2|DIM;MAH;LTC;AHP;AHV;VIE|모바일DM;모바일사고조회;장기계약변경서류전송;모바일사고조회 사진업로드;모바일사고조회 동영상업로드;웹뷰|80 / 443;8050 / 8443;8051 / 8444|https://dm.mdbins.com:443;https://dm.mdbins.com:8443;https://dm.mdbins.com:8444||황가람 / 장영민;안정진, 최성식 / 장영민;강동효 / 장영민;솔루션|10.88.22.179|
+210.124.234.137|운영|ASIS|IP|비대면전자서식|WEB|PZ-MIDMWEB1/2|NSS|비대면전자서식|8510 / 8500|https://dm.mdbins.com:8500||자동차보상(정상현) / 일반보상(김두리나) / 장기보상(조현석) / 자동차보상(김태은) / 일반보상(한창훈) / 장기보상(조현석)|10.88.22.179|
+210.124.234.138|운영|ASIS|IP|모바일DM|WEB|PZ-MIDMWEB1/2|DIM;MAH;LTC;AHP;AHV;VIE|모바일DM;모바일사고조회;장기계약변경서류전송;모바일사고조회 사진업로드;모바일사고조회 동영상업로드;웹뷰|80 / 443;8050 / 8443;8051 / 8444|https://dm.mdbins.com:443;https://dm.mdbins.com:8443;https://dm.mdbins.com:8444||황가람 / 장영민;안정진, 최성식 / 장영민;강동효 / 장영민;솔루션|10.88.22.180|
+210.124.234.138|운영|ASIS|IP|비대면전자서식|WEB|PZ-MIDMWEB1/2|NSS|비대면전자서식|8510 / 8500|https://dm.mdbins.com:8500||자동차보상(정상현) / 일반보상(김두리나) / 장기보상(조현석) / 자동차보상(김태은) / 일반보상(한창훈) / 장기보상(조현석)|10.88.22.180|
+210.127.32.21|운영|ASIS|IP|보상모바일|WEB|PZ-MCPSWEB1/2|MCL;AGW;HFM|보상모바일;보상모바일앱위변조;보상모바일전자서식|80 / 443;89 / 452;85 / 81|https://mobileeclaim.mdbins.com;http://mobileeclaim.mdbins.com:89;https://mobileeclaim.mdbins.com:81||한창훈 / 한창훈;솔루션|10.88.22.208|★주황
+210.127.32.21|운영|ASIS|IP|보상PRM|WEB|PZ-MCPSWEB1/2|CPR;PRD|보상PRM;보상PRMRD|8250 / 9251;8000 / 8043|https://prm.dbpromy.co.kr;https://prm.dbpromy.co.kr:8043||김계원 / 김태은;솔루션|10.88.22.208|
+210.127.32.22|운영|ASIS|IP|보상모바일|WEB|PZ-MCPSWEB1/2|MCL;AGW;HFM|보상모바일;보상모바일앱위변조;보상모바일전자서식|80 / 443;89 / 452;85 / 81|https://mobileeclaim.mdbins.com;http://mobileeclaim.mdbins.com:89;https://mobileeclaim.mdbins.com:81||한창훈 / 한창훈;솔루션|10.88.22.209|★주황
+210.127.32.22|운영|ASIS|IP|보상PRM|WEB|PZ-MCPSWEB1/2|CPR;PRD|보상PRM;보상PRMRD|8250 / 9251;8000 / 8043|https://prm.dbpromy.co.kr;https://prm.dbpromy.co.kr:8043||김계원 / 김태은;솔루션|10.88.22.209|
+210.127.32.29|운영|ASIS|IP|총무지원|WEB|p2gptewb1/2|LPR;RLM;GPT;CGS|변호사PRM;부동산임차관리;스마트총무지원;위탁관리|- / 8443;9080 / 9443;80 / 443;- / 443|https://lawprm.dbins.co.kr:8443;https://rlm.mdbins.com:9443;http://iss.mdbins.com;http://cic.dbins.co.kr||한지효 / 유일한;정수영 / 정수영;강종구 / 정수영;롯데정보통신 / 박영주|10.88.22.238|
+210.127.32.30|운영|ASIS|IP|총무지원|WEB|p2gptewb1/2|LPR;RLM;GPT;CGS|변호사PRM;부동산임차관리;스마트총무지원;위탁관리|- / 8443;9080 / 9443;80 / 443;- / 443|https://lawprm.dbins.co.kr:8443;https://rlm.mdbins.com:9443;http://iss.mdbins.com;http://cic.dbins.co.kr||한지효 / 유일한;정수영 / 정수영;강종구 / 정수영;롯데정보통신 / 박영주|10.88.22.239|
+210.127.41.35|운영|ASIS|IP|모바일주행거리|WEB|SMARTWEB1/2|MCE;MMX|영업용모바일고객컨텐츠및전자서명;모바일주행거리블랙박스|8085 / 8485;8084 / 7443|https://cdsm.mdbins.com:8485;https://cdsm.mdbins.com:7443||김태혁, 배병용 / 장영민, 배병용;김연수 / 장영민|10.88.22.199|
+210.127.41.36|운영|ASIS|IP|모바일주행거리|WEB|SMARTWEB1/2|MCE;MMX|영업용모바일고객컨텐츠및전자서명;모바일주행거리블랙박스|8085 / 8485;8084 / 7443|https://cdsm.mdbins.com:8485;https://cdsm.mdbins.com:7443||김태혁, 배병용 / 장영민, 배병용;김연수 / 장영민|10.88.22.200|
+210.127.41.99|운영|ASIS|IP|모바일CSI|WEB|PZ-MCSIWEB1/2|MCS;MAI;MOP|모바일CSI;모바일사고조사;모바일포탈|80 / 443;2080 / 2443;8110 / 8100|https://mcsi.mdbins.com:443;https://mcsi.mdbins.com:2443;https://mcsi.mdbins.com:8100||김연수 / 장영민;안정진 / 장영민|10.88.22.202|OS: Windows;★주황
+210.127.41.100|운영|ASIS|IP|모바일CSI|WEB|PZ-MCSIWEB1/2|MCS;MAI;MOP|모바일CSI;모바일사고조사;모바일포탈|80 / 443;2080 / 2443;8110 / 8100|https://mcsi.mdbins.com:443;https://mcsi.mdbins.com:2443;https://mcsi.mdbins.com:8100||김연수 / 장영민;안정진 / 장영민|10.88.22.203|OS: Windows;★주황
+210.127.41.101|운영|ASIS|IP|모바일디빈스|WEB|PZ-WMDBWEB1/2|MDB;AGW|모바일디빈스;앱위변조(Appiron)|80 / 443;8210 / 8200|https://dboffice.mdbins.com:443;https://dboffice.mdbins.com:8200||안정진;솔루션|10.88.22.205|★주황
+210.127.41.102|운영|ASIS|IP|모바일디빈스|WEB|PZ-WMDBWEB1/2|MDB;AGW|모바일디빈스;앱위변조(Appiron)|80 / 443;8210 / 8200|https://dboffice.mdbins.com:443;https://dboffice.mdbins.com:8200||안정진;솔루션|10.88.22.206|★주황
+210.127.41.117|운영|ASIS|IP|통합푸쉬|WEB|PZ-MTPSWEB1/2|MTP|통합푸쉬|80 / 443|https://push.mdbins.com||김태혁 / 장영민|10.88.22.133|
+210.127.41.118|운영|ASIS|IP|통합푸쉬|WEB|PZ-MTPSWEB1/2|MTP|통합푸쉬|80 / 443|https://push.mdbins.com||김태혁 / 장영민|10.88.22.134|
+10.10.89.38|운영|TOBE|IP|모바일CSI|WAS|PZ-MCSIWAS1/2|MSR;ADA;MPR|모바일CSI관리자;모바일사고조사관리자;모바일포탈관리자|8000 / 8363;85 / 448;8100 / 8463|||김연수 / 장영민;안정진 / 장영민|10.10.150.117|
+10.10.89.39|운영|TOBE|IP|모바일CSI|WAS|PZ-MCSIWAS1/2|MSR;ADA;MPR|모바일CSI관리자;모바일사고조사관리자;모바일포탈관리자|8000 / 8363;85 / 448;8100 / 8463|||김연수 / 장영민;안정진 / 장영민|10.10.150.118|
+10.10.89.41|운영|TOBE|IP|모바일디빈스|WAS|PZ-WMDBWAS1/2|MAR;AAD|모바일디빈스관리자;앱위변조관리자|8100 / 8463;8300 / 8663|||안정진 / 장영민;솔루션|10.10.150.126|
+10.10.89.42|운영|TOBE|IP|모바일디빈스|WAS|PZ-WMDBWAS1/2|MAR;AAD|모바일디빈스관리자;앱위변조관리자|8100 / 8463;8300 / 8663|||안정진 / 장영민;솔루션|10.10.150.127|
+10.10.89.47|운영|TOBE|IP|보상PRM|WEB|PZ-WPRMWEB1/2|CPR;PRD|보상PRM;보상PRMRD|80 / 443;8000 / 8043|https://prm.dbins.co.kr;https://prm.dbins.co.kr:8043||김계원 / 김태은;솔루션|10.10.77.49|
+10.10.89.48|운영|TOBE|IP|보상PRM|WEB|PZ-WPRMWEB1/2|CPR;PRD|보상PRM;보상PRMRD|80 / 443;8000 / 8043|https://prm.dbins.co.kr;https://prm.dbins.co.kr:8043||김계원 / 김태은;솔루션|10.10.77.50|
+10.10.89.73|운영|TOBE|IP|총무지원|WEB|p1gptiwb1/2|LGS;RLM;CDM;GPT;CGS|법무지원;부동산임차관리;스마트공시지원;스마트총무지원;위탁관리|8080 / -;9080 / 9443;8480 / 8483;80 / 443;- / 2443|http://dblaw.dbins.co.kr:8080;https://rlm.mdbins.net:9443 (내부);http://iss.dbins.co.kr:8483;http://iss.dbins.co.kr (내부);https://cic.dbins.net:2443 (내부)||한지효 / 유일한;정수영 / 정수영;송준규 / 정수영;강종구 / 정수영;롯데정보통신 / 박영주|10.10.17.99|OS: Linux
+10.10.89.74|운영|TOBE|IP|총무지원|WEB|p1gptiwb1/2|LGS;RLM;CDM;GPT;CGS|법무지원;부동산임차관리;스마트공시지원;스마트총무지원;위탁관리|8080 / -;9080 / 9443;8480 / 8483;80 / 443;- / 2443|http://dblaw.dbins.co.kr:8080;https://rlm.mdbins.net:9443 (내부);http://iss.dbins.co.kr:8483;http://iss.dbins.co.kr (내부);https://cic.dbins.net:2443 (내부)||한지효 / 유일한;정수영 / 정수영;송준규 / 정수영;강종구 / 정수영;롯데정보통신 / 박영주|10.10.17.100|OS: Linux
+10.10.91.60|운영|TOBE|IP|고객안내자료심의|WEB|pz-wcfsws1|CFS|고객안내자료심의|80 / 443|http://agc.dbins.co.kr||이세영 / 유일한|10.10.18.172|WEB/WAS 동일 서버
+10.10.91.60|운영|TOBE|IP|고객안내자료심의|WAS|pz-wcfsws1|||||||10.10.18.172|
+10.10.91.76|운영|TOBE|IP|모바일주행거리|WAS|PZ-MSMTWAS1/2|||||||10.10.61.27|
+10.10.91.77|운영|TOBE|IP|모바일주행거리|WAS|PZ-MSMTWAS1/2|||||||10.10.61.28|
+10.10.91.79|운영|TOBE|IP|모바일DM|WAS|PZ-MIDMWAS1/2|||||||10.10.150.33|
+10.10.91.80|운영|TOBE|IP|모바일DM|WAS|PZ-MIDMWAS1/2|||||||10.10.150.34|
+10.10.91.84|운영|TOBE|IP|보상모바일|WAS|PZ-MCPSWAS1/2|MCA;AAD|보상모바일관리자;보상모바일앱위변조관리자|87 / 450;90 / 453|http://mobileeclaimadm.dbins.co.kr:9082;http://10.10.150.39:9084||한창훈 / 한창훈;솔루션|10.10.150.39|
+10.10.91.84|운영|TOBE|IP|보상PRM|WAS|PZ-MCPSWAS1/2|||||||10.10.150.39|
+10.10.91.85|운영|TOBE|IP|보상모바일|WAS|PZ-MCPSWAS1/2|MCA;AAD|보상모바일관리자;보상모바일앱위변조관리자|87 / 450;90 / 453|http://mobileeclaimadm.dbins.co.kr:9082;http://10.10.150.39:9084||한창훈 / 한창훈;솔루션|10.10.150.40|
+10.10.91.85|운영|TOBE|IP|보상PRM|WAS|PZ-MCPSWAS1/2|||||||10.10.150.40|
+10.10.91.103|운영|TOBE|IP|총무지원|WAS|p1gptws1/2|||||||10.10.150.49|
+10.10.91.104|운영|TOBE|IP|총무지원|WAS|p1gptws1/2|||||||10.10.150.50|
+10.10.91.125|운영|TOBE|IP|통합푸쉬|WAS|PZ-MTPSWAS1/2|||||||10.10.17.27|
+10.10.91.126|운영|TOBE|IP|통합푸쉬|WAS|PZ-MTPSWAS1/2|||||||10.10.17.28|
+10.88.22.133|운영|TOBE|IP|통합푸쉬|WEB|PZ-MTPSWEB1/2|MTP|통합푸쉬|80 / 443|https://push.mdbins.com||김태혁 / 장영민|210.127.41.117|
+10.88.22.134|운영|TOBE|IP|통합푸쉬|WEB|PZ-MTPSWEB1/2|MTP|통합푸쉬|80 / 443|https://push.mdbins.com||김태혁 / 장영민|210.127.41.118|
+10.88.22.152|운영|TOBE|VIP|모바일CSI|WEB|PZ-MCSIWEB1/2|MCS;MAI;MOP|모바일CSI;모바일사고조사;모바일포탈|80 / 443;2080 / 2443;8110 / 8100|https://mcsi.mdbins.com:443;https://mcsi.mdbins.com:2443;https://mcsi.mdbins.com:8100||김연수 / 장영민;안정진 / 장영민||OS: Windows;★주황
+10.88.22.153|운영|TOBE|VIP|모바일디빈스|WEB|PZ-WMDBWEB1/2|MDB;AGW|모바일디빈스;앱위변조(Appiron)|80 / 443;8210 / 8200|https://dboffice.mdbins.com:443;https://dboffice.mdbins.com:8200||안정진;솔루션|210.124.234.111|★주황
+10.88.22.154|운영|TOBE|VIP|모바일DM|WEB|PZ-MIDMWEB1/2|DIM;MAH;LTC;AHP;AHV;VIE|모바일DM;모바일사고조회;장기계약변경서류전송;모바일사고조회 사진업로드;모바일사고조회 동영상업로드;웹뷰|80 / 443;8050 / 8443;8051 / 8444|https://dm.mdbins.com:443;https://dm.mdbins.com:8443;https://dm.mdbins.com:8444||황가람 / 장영민;안정진, 최성식 / 장영민;강동효 / 장영민;솔루션||
+10.88.22.154|운영|TOBE|VIP|비대면전자서식|WEB|PZ-MIDMWEB1/2|NSS|비대면전자서식|8510 / 8500|https://dm.mdbins.com:8500||자동차보상(정상현) / 일반보상(김두리나) / 장기보상(조현석) / 자동차보상(김태은) / 일반보상(한창훈) / 장기보상(조현석)||
+10.88.22.155|운영|TOBE|VIP|총무지원|WEB|p2gptewb1/2|LPR;RLM;GPT;CGS|변호사PRM;부동산임차관리;스마트총무지원;위탁관리|- / 8443;9080 / 9443;80 / 443;- / 443|https://lawprm.dbins.co.kr:8443;https://rlm.mdbins.com:9443;http://iss.mdbins.com;http://cic.dbins.co.kr||한지효 / 유일한;정수영 / 정수영;강종구 / 정수영;롯데정보통신 / 박영주||
+10.88.22.156|운영|TOBE|VIP|통합푸쉬|WEB|PZ-MTPSWEB1/2|MTP|통합푸쉬|80 / 443|https://push.mdbins.com||김태혁 / 장영민|210.124.234.129|
+10.88.22.157|운영|TOBE|VIP|보상모바일|WEB|PZ-MCPSWEB1/2|MCL;AGW;HFM|보상모바일;보상모바일앱위변조;보상모바일전자서식|80 / 443;89 / 452;85 / 81|https://mobileeclaim.mdbins.com;http://mobileeclaim.mdbins.com:89;https://mobileeclaim.mdbins.com:81||한창훈 / 한창훈;솔루션||★주황
+10.88.22.157|운영|TOBE|VIP|보상PRM|WEB|PZ-MCPSWEB1/2|CPR;PRD|보상PRM;보상PRMRD|8250 / 9251;8000 / 8043|https://prm.dbpromy.co.kr;https://prm.dbpromy.co.kr:8043||김계원 / 김태은;솔루션||
+10.88.22.179|운영|TOBE|IP|모바일DM|WEB|PZ-MIDMWEB1/2|DIM;MAH;LTC;AHP;AHV;VIE|모바일DM;모바일사고조회;장기계약변경서류전송;모바일사고조회 사진업로드;모바일사고조회 동영상업로드;웹뷰|80 / 443;8050 / 8443;8051 / 8444|https://dm.mdbins.com:443;https://dm.mdbins.com:8443;https://dm.mdbins.com:8444||황가람 / 장영민;안정진, 최성식 / 장영민;강동효 / 장영민;솔루션|210.124.234.137|
+10.88.22.179|운영|TOBE|IP|비대면전자서식|WEB|PZ-MIDMWEB1/2|NSS|비대면전자서식|8510 / 8500|https://dm.mdbins.com:8500||자동차보상(정상현) / 일반보상(김두리나) / 장기보상(조현석) / 자동차보상(김태은) / 일반보상(한창훈) / 장기보상(조현석)|210.124.234.137|
+10.88.22.180|운영|TOBE|IP|모바일DM|WEB|PZ-MIDMWEB1/2|DIM;MAH;LTC;AHP;AHV;VIE|모바일DM;모바일사고조회;장기계약변경서류전송;모바일사고조회 사진업로드;모바일사고조회 동영상업로드;웹뷰|80 / 443;8050 / 8443;8051 / 8444|https://dm.mdbins.com:443;https://dm.mdbins.com:8443;https://dm.mdbins.com:8444||황가람 / 장영민;안정진, 최성식 / 장영민;강동효 / 장영민;솔루션|210.124.234.138|
+10.88.22.180|운영|TOBE|IP|비대면전자서식|WEB|PZ-MIDMWEB1/2|NSS|비대면전자서식|8510 / 8500|https://dm.mdbins.com:8500||자동차보상(정상현) / 일반보상(김두리나) / 장기보상(조현석) / 자동차보상(김태은) / 일반보상(한창훈) / 장기보상(조현석)|210.124.234.138|
+10.88.22.199|운영|TOBE|IP|모바일주행거리|WEB|SMARTWEB1/2|MCE;MMX|영업용모바일고객컨텐츠및전자서명;모바일주행거리블랙박스|8085 / 8485;8084 / 7443|https://cdsm.mdbins.com:8485;https://cdsm.mdbins.com:7443||김태혁, 배병용 / 장영민, 배병용;김연수 / 장영민|210.127.41.35|
+10.88.22.200|운영|TOBE|IP|모바일주행거리|WEB|SMARTWEB1/2|MCE;MMX|영업용모바일고객컨텐츠및전자서명;모바일주행거리블랙박스|8085 / 8485;8084 / 7443|https://cdsm.mdbins.com:8485;https://cdsm.mdbins.com:7443||김태혁, 배병용 / 장영민, 배병용;김연수 / 장영민|210.127.41.36|
+10.88.22.202|운영|TOBE|IP|모바일CSI|WEB|PZ-MCSIWEB1/2|MCS;MAI;MOP|모바일CSI;모바일사고조사;모바일포탈|80 / 443;2080 / 2443;8110 / 8100|https://mcsi.mdbins.com:443;https://mcsi.mdbins.com:2443;https://mcsi.mdbins.com:8100||김연수 / 장영민;안정진 / 장영민|210.127.41.99|OS: Windows;★주황
+10.88.22.203|운영|TOBE|IP|모바일CSI|WEB|PZ-MCSIWEB1/2|MCS;MAI;MOP|모바일CSI;모바일사고조사;모바일포탈|80 / 443;2080 / 2443;8110 / 8100|https://mcsi.mdbins.com:443;https://mcsi.mdbins.com:2443;https://mcsi.mdbins.com:8100||김연수 / 장영민;안정진 / 장영민|210.127.41.100|OS: Windows;★주황
+10.88.22.205|운영|TOBE|IP|모바일디빈스|WEB|PZ-WMDBWEB1/2|MDB;AGW|모바일디빈스;앱위변조(Appiron)|80 / 443;8210 / 8200|https://dboffice.mdbins.com:443;https://dboffice.mdbins.com:8200||안정진;솔루션|210.127.41.101|★주황
+10.88.22.206|운영|TOBE|IP|모바일디빈스|WEB|PZ-WMDBWEB1/2|MDB;AGW|모바일디빈스;앱위변조(Appiron)|80 / 443;8210 / 8200|https://dboffice.mdbins.com:443;https://dboffice.mdbins.com:8200||안정진;솔루션|210.127.41.102|★주황
+10.88.22.208|운영|TOBE|IP|보상모바일|WEB|PZ-MCPSWEB1/2|MCL;AGW;HFM|보상모바일;보상모바일앱위변조;보상모바일전자서식|80 / 443;89 / 452;85 / 81|https://mobileeclaim.mdbins.com;http://mobileeclaim.mdbins.com:89;https://mobileeclaim.mdbins.com:81||한창훈 / 한창훈;솔루션|210.127.32.21|★주황
+10.88.22.208|운영|TOBE|IP|보상PRM|WEB|PZ-MCPSWEB1/2|CPR;PRD|보상PRM;보상PRMRD|8250 / 9251;8000 / 8043|https://prm.dbpromy.co.kr;https://prm.dbpromy.co.kr:8043||김계원 / 김태은;솔루션|210.127.32.21|
+10.88.22.209|운영|TOBE|IP|보상모바일|WEB|PZ-MCPSWEB1/2|MCL;AGW;HFM|보상모바일;보상모바일앱위변조;보상모바일전자서식|80 / 443;89 / 452;85 / 81|https://mobileeclaim.mdbins.com;http://mobileeclaim.mdbins.com:89;https://mobileeclaim.mdbins.com:81||한창훈 / 한창훈;솔루션|210.127.32.22|★주황
+10.88.22.209|운영|TOBE|IP|보상PRM|WEB|PZ-MCPSWEB1/2|CPR;PRD|보상PRM;보상PRMRD|8250 / 9251;8000 / 8043|https://prm.dbpromy.co.kr;https://prm.dbpromy.co.kr:8043||김계원 / 김태은;솔루션|210.127.32.22|
+10.88.22.238|운영|TOBE|IP|총무지원|WEB|p2gptewb1/2|LPR;RLM;GPT;CGS|변호사PRM;부동산임차관리;스마트총무지원;위탁관리|- / 8443;9080 / 9443;80 / 443;- / 443|https://lawprm.dbins.co.kr:8443;https://rlm.mdbins.com:9443;http://iss.mdbins.com;http://cic.dbins.co.kr||한지효 / 유일한;정수영 / 정수영;강종구 / 정수영;롯데정보통신 / 박영주|210.127.32.29|
+10.88.22.239|운영|TOBE|IP|총무지원|WEB|p2gptewb1/2|LPR;RLM;GPT;CGS|변호사PRM;부동산임차관리;스마트총무지원;위탁관리|- / 8443;9080 / 9443;80 / 443;- / 443|https://lawprm.dbins.co.kr:8443;https://rlm.mdbins.com:9443;http://iss.mdbins.com;http://cic.dbins.co.kr||한지효 / 유일한;정수영 / 정수영;강종구 / 정수영;롯데정보통신 / 박영주|210.127.32.30|
