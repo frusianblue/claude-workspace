@@ -7,7 +7,7 @@
 <!-- INDEX:START -->
 | 프로젝트 | 상태 | 최근 작업 | 다음 행동 |
 |---|---|---|---|
-| [mar-eos-encoding](projects/eos-asis-replace) | 🟢 active | [2026-08-18](projects/eos-asis-replace/handoffs/2026-08-18b.md) | Find-AsisPath v9.8 배너 확인 후 FindTest.java 픽스처로 -Kind all 실행 — PS 5.1에서 스캔 경로 런타임 첫 검증 |
+| [mar-eos-encoding](projects/eos-asis-replace) | 🟢 active | [2026-08-18](projects/eos-asis-replace/handoffs/2026-08-18c.md) | Get-MappedDrives -FromNetUse netuse.dat -Tag 모바일DM -EmitMapping 로 mapping\ 산출물 한글 확인 (8/18b 미해결 2번) → 이어서 정리 3건 패치 |
 | [ai-agent-proto](projects/ai-agent-proto) | 🟢 active | [2026-07-19](projects/ai-agent-proto/handoffs/2026-07-19.md) | Debug 탭에서 두 앱 프로세스 생존 확인 (포트 점유 의심, Port already in use 로그) |
 <!-- INDEX:END -->
 
