@@ -7,14 +7,23 @@
 #   입력 : -Dest 생성 위치 (기본 .\fixtures\findtest)
 #   출력 : 픽스처 트리 + 콘솔에 기대값 표
 #   선행 : 없음
-#   상태 : 신규 v1
+#   상태 : 현행 v1.1
 #
 #   공통 : 이 파일은 UTF-8 with BOM 으로 저장할 것 (PS 5.1은 BOM 없으면 MS949로 읽음)
 #          실행:  powershell -ExecutionPolicy Bypass -File .\<파일>.ps1 ...
 #          출력 확장자 .dat 유지 (회사 DRM의 csv/txt 자동 암호화 회피)
 #   전체 순서는 ..\README.md 참조
 # ===========================================================================
-# New-FindTestFixture.ps1 (v1)
+# New-FindTestFixture.ps1 (v1.1)
+#
+# ── 버전 이력 ──────────────────────────────────────────────────
+# v1   : 최초 — FILE(java/properties) + CLASS + JAR 전 경로 픽스처 + 기대값 표
+# v1.1 : Find 가 아카이브·.class 를 Encoding::ASCII 로 디코드한다는 사실 반영
+#        (1) findtest.properties 를 UTF-8 BOM → ASCII 로 쓰도록 변경 ($ascii 신규)
+#            java .properties 는 원래 ISO-8859-1 계열이다. BOM 이 붙으면 첫 키가 깨진다
+#        (2) [J02] 주의문 추가 — JAR/CLASS 행의 Match 컬럼 한글이 '?' 로 나오는 것은
+#            버그가 아니라 정상. 탐지 패턴은 전부 ASCII 라 검출에는 영향 없다
+#        (3) 픽스처 케이스 자체는 변경 없음 — 기대값 총 29건 동일
 #
 # 왜 필요한가
 #   -Inventory 는 `if ($Inventory) { ... return }` 로 조기 반환하므로
