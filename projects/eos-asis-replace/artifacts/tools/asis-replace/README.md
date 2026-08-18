@@ -2,9 +2,10 @@
 
 | 파일 | 단계 | 역할 |
 |---|---|---|
+| `Get-MappedDrives.ps1` (v1) | A-0 | 이 PC/서버의 네트워크 드라이브 ↔ 실제 UNC 수집. `-EmitMapping`으로 치환 매핑표 초안까지 |
 | `Find-AsisPath.ps1` (v9.6) | A-1 | 전수조사. `-Kind path,unc,ip,port,domain,host`, `-Scope all/src/build`, `-Inventory`, `-AddExt`, `-ExcludeJars`/`-ExcludeDomains`(노이즈 제외), `-RootList` 일괄, jar/war 중첩 내부까지 |
 | `Extract-MappingDraft.ps1` (v2.1) | A-2 | Find 리포트에서 매핑표 초안 추출 (`-Mode Path\|Ip\|Domain\|Port`) |
-| `Replace-AsisPath.ps1` (v4.1) | A-3 | 경로 치환(드라이브 + UNC/NAS). DryRun 기본, `-Apply` 시 자동 백업 |
+| `Replace-AsisPath.ps1` (v4.2) | A-3 | 경로 치환(드라이브 + UNC/NAS). DryRun 기본, `-Apply` 시 자동 백업 |
 | `Replace-AsisIp.ps1` (v5) | A-4 | IP 치환. `-UsePort`로 `IP:포트` 규칙 우선 |
 | `RootList/roots.dat` | 입력 | Find·ReplaceIp 일괄 목록 (한 줄 = 소스 경로) |
 | `RootList/replace_targets.dat` | 입력 | ReplacePath 일괄 목록 (`소스경로,매핑파일`) |
@@ -83,9 +84,39 @@ EUC-KR·UTF-8 섞인 레거시 소스여도 **검출은 영향 없다** (경로/
 
 `Replace-AsisPath` v4.1의 UNMAPPED 탐지도 같은 기준으로 맞췄다 (안 그러면 UNMAPPED가 이스케이프로 도배된다).
 
+## 매핑드라이브(W: Z: X: T: Y:) 다루기
+
+소스에 박힌 `Z:\...` 를 고치려면 **Z:가 실제로 어느 서버의 어느 공유인지**를 알아야 하는데,
+그건 소스 어디에도 없고 서버마다 다르다. `Get-MappedDrives.ps1` 로 먼저 수집한다.
+
+```powershell
+.\Get-MappedDrives.ps1 -Tag 모바일DM -EmitMapping
+# 서버에 스크립트를 못 올리면: (서버에서) net use > netuse.txt  ->  -FromNetUse netuse.txt
+```
+
+→ `report\<컴퓨터명>_모바일DM_mapped_drives.dat` + `mapping\..._drive_to_unc.dat` (바로 `-Map` 사용 가능)
+→ 콘솔에 `-Drives "w,t,x,z,y"` / `-Hosts "nas_mobiledb,nas_digitsign_rdon"` 를 그대로 찍어준다
+
+**[실측 함정] 같은 드라이브 문자가 시스템마다 다른 곳을 가리킨다.**
+
+```
+모바일DM   Z: = \\nas_digitsign_rdon\digitsign_rdon
+모바일CSI  Z: = \\windbvs1\MCSI_Res$
+```
+
+→ 매핑표를 전 소스 공용으로 쓰면 **엉뚱한 서버로 치환된다.** 반드시 소스별 매핑파일로 분리하고
+(`replace_targets.dat` 의 `소스경로,매핑파일`), 드라이브 루트 매핑은 DryRun 리포트를 눈으로 확인할 것.
+
+**드라이브 → UNC 정규화** (v4.2): `z:,\\nas_mobiledb\MobileDB` 처럼 드라이브 루트를 OldPath로 쓸 수 있다.
+(원래 통짜 매핑은 금지지만 NewPath가 UNC인 이 경우만 예외 — 매핑드라이브 폐지가 정확히 이 형태다)
+`"Z:"` 단독 표기도, `Z:\data` 의 접두도 같이 바뀐다. java 리터럴이면 `"\\\\nas...\\data"` 로 이스케이프까지 맞춘다.
+`-ForceUncBackslash` 를 주면 원본이 `/` 스타일이어도 `\` UNC로 출력한다 (bat/cmd 안전).
+매핑표 안에서 A의 결과가 B의 OldPath와 겹치면 **연쇄 치환 경고**가 뜬다.
+
 ## 표준 흐름
 
 ```
+A-0 Get-MappedDrives  → 드라이브 ↔ UNC 실측 (시스템별)
 A-0 Find -Inventory   → 확장자 사각지대 확인 (미조사 확장자 있으면 -AddExt)
 A-1 Find (-Kind all)  → 전수조사 증적 + 매핑표 재료 + 소스유실 탐지
 A-2 Extract -Mode Path/Ip → 초안 .dat (New 열 비어 있음, 사람이 채움)

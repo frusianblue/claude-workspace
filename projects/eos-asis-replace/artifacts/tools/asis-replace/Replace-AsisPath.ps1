@@ -6,7 +6,7 @@
 #   입력 : -Root + -Map (또는 -RootList: 소스경로,매핑파일)
 #   출력 : report\<소스명>_asis_path_replace_report.dat + <소스명>_backup_path_<시각>\
 #   선행 : A-2 매핑표 작성 완료. ★ 인코딩 통일(B-6)을 먼저 끝낼 것
-#   상태 : 현행 v4.1
+#   상태 : 현행 v4.2
 #
 #   공통 : 이 파일은 UTF-8 with BOM 으로 저장할 것 (PS 5.1은 BOM 없으면 MS949로 읽음)
 #          실행:  powershell -ExecutionPolicy Bypass -File .\<파일>.ps1 ...
@@ -62,6 +62,7 @@ param(
     # [v4.1] UNC 탐지는 Find v9.4와 같은 기준 — '점 있는 호스트' 또는 '2글자+호스트\2글자+공유명'.
     #        느슨하게 두면 java/js의 정규식 이스케이프(\\d{1,3}, \\x20\\t)가 전부 UNMAPPED로 올라온다.
     [string]$DetectPattern = "(?<![a-zA-Z0-9])[A-Za-z]:[/\\]|(?<![\w:])\\{2,4}(?!(?:x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})(?![\w\-]))(?=[A-Za-z0-9][\w\-]*(?:\.[\w\-]+|(?:\\{1,2}|/)[^\s`"'<>|*?:,;=(){}\[\]\\/]{2,}))",
+    [switch]$ForceUncBackslash,          # UNC로 치환할 때 원본이 / 스타일이어도 \ 로 출력 (.bat/.cmd 안전)
     [switch]$Apply
 )
 # [PATCH 2026-08-13] .NET 정적 메서드의 상대경로 기준을 PowerShell 현재 위치와 일치시킨다.
@@ -142,8 +143,12 @@ function New-PathAlt([string]$canon) {
     }
     $segs = $canon.Split('/')
     $dl = $segs[0][0]
+    $dlClass = "[" + [char]::ToLower($dl) + [char]::ToUpper($dl) + "]:"
+    # [v4.2] 드라이브 루트 단독 매핑 (z: -> \\nas\share). 매핑드라이브를 UNC로 정규화할 때 쓴다.
+    #   "Z:" 도, Z:\data 의 접두 Z: 도 같은 방식으로 잡힌다 (뒤 경로는 그대로 남는다)
+    if ($segs.Count -lt 2 -or -not $segs[1]) { return $dlClass }
     $body = ($segs[1..($segs.Count-1)] | ForEach-Object { [regex]::Escape($_) }) -join $sep
-    return "[" + [char]::ToLower($dl) + [char]::ToUpper($dl) + "]:" + $sep + $body
+    return $dlClass + $sep + $body
 }
 
 # ---------- 매핑 로드 (검증 실패 시 $false 반환 — 일괄 모드 사전 검증용) ----------
@@ -162,7 +167,7 @@ function Import-PathMapping([string]$mapPath) {
         if ($cols.Count -lt 2) { Write-Error "[$mapPath] ${lineNo}행: 컬럼 부족 -> $l"; return $false }
         $old = $cols[0].Trim(); $new = $cols[1].Trim()
         # v4: 드라이브 경로(d:\...) 또는 UNC(\\nas\share, //nas/share) 둘 다 허용
-        $rxDriveOk = '^[a-zA-Z]:[/\\]'
+        $rxDriveOk = '^[a-zA-Z]:([/\\]|$)'   # v4.2: 드라이브 루트 단독(z:)도 허용 (New가 UNC일 때만 통과)
         $rxUncOk   = '^[\\/]{2,}[A-Za-z0-9]'
         if ($old -notmatch $rxDriveOk -and $old -notmatch $rxUncOk) {
             Write-Error "[$mapPath] ${lineNo}행: OldPath는 드라이브 경로(d:\...) 또는 UNC(\\서버\공유)여야 함 -> $old"; return $false }
@@ -184,8 +189,14 @@ function Import-PathMapping([string]$mapPath) {
                 if ($segs.Count -eq 1) {
                     Write-Warning "[$mapPath] ${lineNo}행: $($pair.N)이 서버 단위 매핑 (\\$($segs[0])) — 그 서버로 시작하는 모든 경로가 바뀐다. 의도 확인" }
             }
-            elseif (($v.Split('/')).Count -lt 2) {
-                Write-Error "[$mapPath] ${lineNo}행: 드라이브 루트 통짜 매핑 불가 (드라이브 아래 최소 1세그먼트 필요) -> $l"; return $false }
+            elseif (($v.Split('/')).Count -lt 2 -or -not ($v.Split('/'))[1]) {
+                # [v4.2] 예외: OldPath가 드라이브 루트이고 NewPath가 UNC면 허용한다.
+                #   매핑드라이브 폐지/정규화 (Z: -> \\nas_mobiledb\MobileDB) 가 정확히 이 형태다.
+                if ($pair.N -eq 'OldPath' -and (Test-IsUncCanon $newC)) {
+                    Write-Warning "[$mapPath] ${lineNo}행: 드라이브 루트 -> UNC 정규화 ($old -> $new). '$old' 로 시작하는 모든 경로가 바뀐다"
+                } else {
+                    Write-Error "[$mapPath] ${lineNo}행: 드라이브 루트 통짜 매핑 불가 (드라이브 아래 최소 1세그먼트 필요) -> $l"; return $false }
+            }
         }
         if (-not (Test-IsUncCanon $oldC) -and -not (Test-IsUncCanon $newC) -and $oldC[0] -ne $newC.ToLower()[0]) {
             Write-Warning "[$mapPath] ${lineNo}행: 드라이브 문자가 다름 (의도 확인) -> $old -> $new" }
@@ -195,6 +206,18 @@ function Import-PathMapping([string]$mapPath) {
         $mapOrder.Add($oldC)
     }
     if ($script:MapTable.Count -eq 0) { Write-Error "유효한 매핑이 없음: $mapPath"; return $false }
+
+    # [v4.2] 연쇄 치환 검사 — A의 NewPath가 B의 OldPath와 겹치면 Apply 후 재DryRun이 0건이 안 된다
+    #   예) z: -> \\windbvs1\res  /  \\windbvs1\res -> \\newsvr\res   (z: 가 두 번 바뀐 꼴)
+    foreach ($k in $script:MapTable.Keys) {
+        $nc = Get-Canon $script:MapTable[$k]
+        foreach ($k2 in $script:MapTable.Keys) {
+            if ($k2 -eq $k) { continue }
+            if ($nc -eq $k2 -or $nc.StartsWith($k2 + '/')) {
+                Write-Warning "[$mapPath] 연쇄 치환 위험: '$k' 의 결과가 '$k2' 매핑에 다시 걸린다. 최종 목적지로 한 줄로 합칠 것 (재DryRun 0건이 안 나온다)"
+            }
+        }
+    }
 
     # 긴 경로 우선 (d:/eos/upload가 d:/eos보다 먼저 매칭되도록)
     $sorted = $mapOrder | Sort-Object { $_.Length } -Descending
@@ -217,7 +240,9 @@ function Import-PathMapping([string]$mapPath) {
 # ---------- 치환값 생성 (구분자 스타일·드라이브 대소문자 보존, v4: UNC 지원) ----------
 # 스타일 판정은 '접두(d: 또는 UNC 선두 \\) 뒤쪽'에서 한다.
 #   v3는 문자열 전체를 보고 판정해서 \\nas\share 를 java 리터럴(\\)로 오인했다.
-function Get-Replacement([string]$orig) {
+# $after : 매칭 바로 뒤 2글자 (Z: 처럼 매칭 안에 구분자가 없을 때 스타일 판정용)
+# $hint  : 그것마저 없을 때 쓸 파일 단위 기본 스타일 (java 리터럴이면 \\)
+function Get-Replacement([string]$orig, [string]$after = "", [string]$hint = "") {
     $canon = Get-Canon $orig
     $new = $script:MapTable[$canon]
     if (-not $new) { return $null }
@@ -231,13 +256,21 @@ function Get-Replacement([string]$orig) {
     elseif ($rest -match '\\')   { $style = '\'  }
     elseif ($rest -match '/')    { $style = '/'  }
     else {
-        # 구분자가 접두 하나뿐인 경우 (d:/eos, \\nas) — 접두로 판정
-        if     ($lead -match '/') { $style = '/' }
+        # [v4.2] 매칭 안에 구분자가 아예 없는 경우 (드라이브 루트 Z:) — 뒤따라오는 문자로 판정
+        #   "Z:\\data" (java 리터럴)냐 "Z:\data" 냐를 매칭 문자열만 봐선 알 수 없다
+        if     ($after -match '^\\\\') { $style = '\\' }
+        elseif ($after -match '^\\')   { $style = '\'  }
+        elseif ($after -match '^/')    { $style = '/'  }
+        elseif ($lead -match '/') { $style = '/' }
         elseif ($origIsUnc)       { $style = if ($lead.Length -ge 4) { '\\' } else { '\' } }
-        else                      { $style = if ($lead.Length -ge 2) { '\\' } else { '\' } }
+        elseif ($lead)            { $style = if ($lead.Length -ge 2) { '\\' } else { '\' } }
+        elseif ($hint)            { $style = $hint }
+        else                      { $style = '\' }
     }
 
     if (Test-IsUncCanon $new) {
+        # [v4.2] //host/share 는 java.io.File은 받아주지만 bat/cmd·일부 레거시 API가 못 읽는다
+        if ($ForceUncBackslash -and $style -eq '/') { $style = if ($hint -eq '\\') { '\\' } else { '\' } }
         # UNC로 치환 — 선두는 구분자 스타일 2벌 (\ -> \\ , \\ -> \\\\ , / -> //)
         return ($style + $style + ($new.TrimStart('/')).Replace('/', $style))
     }
@@ -285,10 +318,22 @@ function Invoke-Replace([string]$scanRoot, [string]$mapLabel, [string]$outFile) 
         if ($bytes.Length -eq 0) { return }
         $content = $latin1.GetString($bytes)
 
+        # [v4.2] 파일 단위 구분자 힌트 — "Z:" 처럼 구분자 없는 매칭의 치환 스타일 결정용.
+        #   java/jsp/js 소스에서 경로는 리터럴 이스케이프(\\)로 쓰므로 그쪽을 기본으로 본다.
+        $ext_ = ([System.IO.Path]::GetExtension($file)).TrimStart('.').ToLower()
+        $styleHint = '\'
+        if (@('java','jsp','jspf','jspx','js','tag') -contains $ext_) {
+            if     ($content -match '[A-Za-z]:\\\\' -or $content -match '\\\\\\\\[A-Za-z0-9]') { $styleHint = '\\' }
+            elseif ($content -match '[A-Za-z]:\\[A-Za-z]') { $styleHint = '\' }
+            else { $styleHint = '\\' }
+        }
+
         $matches_ = $script:rx.Matches($content)
 
         foreach ($m in $matches_) {
-            $newVal = Get-Replacement $m.Value
+            $tailIdx = $m.Index + $m.Length
+            $tail = if ($tailIdx -lt $content.Length) { $content.Substring($tailIdx, [Math]::Min(2, $content.Length - $tailIdx)) } else { "" }
+            $newVal = Get-Replacement $m.Value $tail $styleHint
             $results.Add([pscustomobject]@{
                 Status  = "REPLACE"
                 Kind    = (Get-ValueKind $m.Value)
@@ -338,7 +383,9 @@ function Invoke-Replace([string]$scanRoot, [string]$mapLabel, [string]$outFile) 
             $pos = 0
             foreach ($m in $matches_) {
                 [void]$sb.Append($content.Substring($pos, $m.Index - $pos))
-                $r = Get-Replacement $m.Value
+                $tailIdx2 = $m.Index + $m.Length
+                $tail2 = if ($tailIdx2 -lt $content.Length) { $content.Substring($tailIdx2, [Math]::Min(2, $content.Length - $tailIdx2)) } else { "" }
+                $r = Get-Replacement $m.Value $tail2 $styleHint
                 if ($r) { [void]$sb.Append($r) } else { [void]$sb.Append($m.Value) }
                 $pos = $m.Index + $m.Length
             }
@@ -390,7 +437,7 @@ function Invoke-Replace([string]$scanRoot, [string]$mapLabel, [string]$outFile) 
 
 # ---------- 실행 ----------
 $mode = if ($Apply) { "APPLY(치환 실행)" } else { "DryRun(검토 전용)" }
-Write-Host "===== Replace-AsisPath v4.1 ====="
+Write-Host "===== Replace-AsisPath v4.2 ====="
 Write-Host "모드: $mode"
 Write-Host "UNMAPPED 탐지: 드라이브 A-Z + UNC(\\서버) — 좁히려면 -DetectPattern 지정"
 
