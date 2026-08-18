@@ -1,4 +1,4 @@
-# ===========================================================================
+﻿# ===========================================================================
 # [표준 헤더] Replace-AsisPath.ps1
 #   계열 : A (경로/IP 치환)
 #   단계 : A-3  경로 치환
@@ -6,7 +6,7 @@
 #   입력 : -Root + -Map (또는 -RootList: 소스경로,매핑파일)
 #   출력 : report\<소스명>_asis_path_replace_report.dat + <소스명>_backup_path_<시각>\
 #   선행 : A-2 매핑표 작성 완료. ★ 인코딩 통일(B-6)을 먼저 끝낼 것
-#   상태 : 현행 v3
+#   상태 : 현행 v4
 #
 #   공통 : 이 파일은 UTF-8 with BOM 으로 저장할 것 (PS 5.1은 BOM 없으면 MS949로 읽음)
 #          실행:  powershell -ExecutionPolicy Bypass -File .\<파일>.ps1 ...
@@ -27,6 +27,14 @@
 #     (2) Out 기본값 report\ + 출력 폴더 자동 생성 (v1은 폴더 없으면 리포트 유실)
 #     (3) 백업 폴더 자동제외 정규식 수정 (<이름>_backup_path_* 형태 인식)
 #     (4) Apply 정합성 경고 / Copy-Item -LiteralPath / 드라이브 루트 통짜 매핑 가드
+# v4: (1) [추가기능1] NAS/네트워크 경로 치환 지원
+#         · 매핑표 OldPath/NewPath에 UNC(\\nas\share, //nas/share) 사용 가능
+#         · 드라이브 <-> UNC 교차 매핑 가능 (W:\data -> \\nas01\data 같은 NAS 이관)
+#         · UNC 접두 스타일 보존: \\nas\share / \\\\nas\\share(java 리터럴) / //nas/share
+#     (2) UNMAPPED 탐지 기본 패턴을 d: 고정에서 'A-Z 드라이브 전부 + UNC'로 확장
+#         (W:\ Z:\ \\nas 가 매핑표에 없으면 UNMAPPED로 올라온다)
+#     (3) 리포트에 Kind 컬럼(path|unc) 추가
+#     (4) powershell -File 실행 시 배열 파라미터가 문자열로 뭉개지는 문제 보정
 # v3: (1) -RootList 일괄 모드 — 목록 파일 형식: 소스경로,매핑파일[,비고]
 #         (소스마다 매핑이 다르므로 매핑파일 명시 필수. 시작 전 전체 사전 검증 후 처리)
 #     (2) 리포트명 규칙 Find v8.2와 통일 — 기본 report\<소스명>_asis_path_replace_report.dat
@@ -49,7 +57,9 @@ param(
     [string[]]$ExcludeDirs = @(".git",".svn",".metadata","node_modules","target","bin","build","classes","dist"),
     [string[]]$ExcludeFiles = @(),          # 예: @("*.min.js","legacy_backup.xml")
     [string]$ExcludeList = "",              # 제외할 파일 경로 목록 파일 (한 줄에 하나)
-    [string]$DetectPattern = "(?<![a-zA-Z0-9])[dD]:[/\\]",  # UNMAPPED 탐지용 (Find와 동일)
+    # UNMAPPED 탐지용 (Find v9와 동일 사상: 드라이브 전부 + UNC)
+    # 특정 구경로만 보고 싶으면 직접 지정: -DetectPattern "(?<![a-zA-Z0-9])[dD]:[/\\]"
+    [string]$DetectPattern = "(?<![a-zA-Z0-9])[A-Za-z]:[/\\]|(?<![\w:])\\{2,4}(?=[A-Za-z0-9])|(?<![\w:/])//(?=[A-Za-z0-9][\w.\-]*/)",
     [switch]$Apply
 )
 # [PATCH 2026-08-13] .NET 정적 메서드의 상대경로 기준을 PowerShell 현재 위치와 일치시킨다.
@@ -57,6 +67,19 @@ param(
 #   powershell.exe 를 다른 폴더에서 켠 뒤 cd 로 옮겨오면 후자는 시작 폴더(보통 C:\Users\<계정>)에
 #   그대로 남아 있어, New-Item 으로 만든 폴더와 [System.IO.File]::Write* 가 쓰는 폴더가 달라진다.
 [Environment]::CurrentDirectory = (Get-Location).ProviderPath
+
+# [v4] powershell -File 로 실행하면 배열 파라미터가 문자열 하나로 뭉개진다.
+#      콤마/세미콜론을 직접 쪼개 콘솔·ISE(배열)와 -File(문자열)을 같게 만든다.
+function Split-ListArg([string[]]$v) {
+    $out = @()
+    foreach ($e in $v) {
+        if ($null -eq $e) { continue }
+        foreach ($p in ($e -split '[,;]')) { $t = $p.Trim(); if ($t) { $out += $t } }
+    }
+    return ,$out
+}
+$ExcludeDirs  = Split-ListArg $ExcludeDirs
+$ExcludeFiles = Split-ListArg $ExcludeFiles
 
 $textExt = @("*.java","*.js","*.xml","*.properties","*.jsp","*.sql",
              "*.bat","*.cmd","*.sh","*.conf","*.ini","*.html","*.htm","*.txt","*.yml","*.yaml")
@@ -91,7 +114,35 @@ function Get-RelPath([string]$path) {
     return $path
 }
 
-function Get-Canon([string]$p) { return (($p -replace '[\\/]+','/').TrimEnd('/')).ToLower() }
+# 정규화 키: 구분자를 /로 통일 + 소문자. UNC는 선두 // 를 반드시 보존한다
+#   d:\eos\upload      -> d:/eos/upload
+#   \\nas01\share      -> //nas01/share
+#   \\\\nas01\\share  -> //nas01/share   (java 리터럴도 같은 키)
+function Get-Canon([string]$p) {
+    $isUnc = $p -match '^[\\/]{2,}'
+    $c = (($p -replace '[\\/]+','/').TrimEnd('/')).ToLower()
+    if ($isUnc) { $c = '//' + $c.TrimStart('/') }
+    return $c
+}
+function Test-IsUncCanon([string]$canon) { return $canon.StartsWith('//') }
+
+# ---------- 정규화 키 1건 -> 매칭용 정규식 조각 (v4: 드라이브 + UNC 공용) ----------
+# 구분자: / 또는 \ 또는 \\ (java 문자열 리터럴) 어느 것이든 매칭
+$script:SepAlt = '(?:\\\\|\\|/)'
+function New-PathAlt([string]$canon) {
+    $sep = $script:SepAlt
+    if (Test-IsUncCanon $canon) {
+        # \\nas\share / \\\\nas\\share(java) / //nas/share 전부 매칭.
+        # 선두에 : 나 구분자가 있으면 제외 (http://host 를 UNC로 오인하지 않게)
+        $segs = @($canon.TrimStart('/').Split('/') | Where-Object { $_ })
+        $body = ($segs | ForEach-Object { [regex]::Escape($_) }) -join $sep
+        return '(?<![:\\/])(?:\\{2,4}|//)' + $body
+    }
+    $segs = $canon.Split('/')
+    $dl = $segs[0][0]
+    $body = ($segs[1..($segs.Count-1)] | ForEach-Object { [regex]::Escape($_) }) -join $sep
+    return "[" + [char]::ToLower($dl) + [char]::ToUpper($dl) + "]:" + $sep + $body
+}
 
 # ---------- 매핑 로드 (검증 실패 시 $false 반환 — 일괄 모드 사전 검증용) ----------
 # 형식(콤마 구분, # 주석): OldPath,NewPath[,비고]
@@ -104,17 +155,40 @@ function Import-PathMapping([string]$mapPath) {
         $l = $raw.Trim()
         if (-not $l -or $l.StartsWith("#")) { continue }
         $cols = $l.Split(",")
+        # Extract-MappingDraft 초안의 헤더 줄은 건너뛴다 (초안을 그대로 매핑표로 쓰는 흐름 지원)
+        if ($cols[0].Trim() -match '^(OldPath|Old)$') { continue }
         if ($cols.Count -lt 2) { Write-Error "[$mapPath] ${lineNo}행: 컬럼 부족 -> $l"; return $false }
         $old = $cols[0].Trim(); $new = $cols[1].Trim()
-        if ($old -notmatch '^[a-zA-Z]:[/\\]') { Write-Error "[$mapPath] ${lineNo}행: OldPath는 드라이브 경로여야 함 -> $old"; return $false }
-        if ($new -notmatch '^[a-zA-Z]:[/\\]') { Write-Error "[$mapPath] ${lineNo}행: NewPath는 드라이브 경로여야 함 -> $new"; return $false }
+        # v4: 드라이브 경로(d:\...) 또는 UNC(\\nas\share, //nas/share) 둘 다 허용
+        $rxDriveOk = '^[a-zA-Z]:[/\\]'
+        $rxUncOk   = '^[\\/]{2,}[A-Za-z0-9]'
+        if ($old -notmatch $rxDriveOk -and $old -notmatch $rxUncOk) {
+            Write-Error "[$mapPath] ${lineNo}행: OldPath는 드라이브 경로(d:\...) 또는 UNC(\\서버\공유)여야 함 -> $old"; return $false }
+        if ($new -notmatch $rxDriveOk -and $new -notmatch $rxUncOk) {
+            Write-Error "[$mapPath] ${lineNo}행: NewPath는 드라이브 경로(d:\...) 또는 UNC(\\서버\공유)여야 함 -> $new"; return $false }
         $oldC = Get-Canon $old
+        $newIsUnc = $new -match '^[\\/]{2,}'
         $newC = ($new -replace '[\\/]+','/').TrimEnd('/')
+        if ($newIsUnc) { $newC = '//' + $newC.TrimStart('/') }   # NewPath는 대소문자 보존(치환 결과), UNC 선두만 복원
         if ($script:MapTable.ContainsKey($oldC)) { Write-Error "[$mapPath] ${lineNo}행: OldPath 중복 -> $old"; return $false }
         if ($oldC -eq (Get-Canon $newC)) { Write-Warning "[$mapPath] ${lineNo}행: Old=New 동일, 건너뜀 -> $old"; continue }
-        if (($oldC.Split('/')).Count -lt 2 -or ($newC.Split('/')).Count -lt 2) {
-            Write-Error "[$mapPath] ${lineNo}행: 드라이브 루트 통짜 매핑 불가 (드라이브 아래 최소 1세그먼트 필요) -> $l"; return $false }
-        if ($oldC[0] -ne $newC.ToLower()[0]) { Write-Warning "[$mapPath] ${lineNo}행: 드라이브 문자가 다름 (의도 확인) -> $old -> $new" }
+        # 통짜 매핑 가드 — 드라이브는 아래 1세그먼트 필수, UNC는 서버명 필수(공유명 없으면 경고)
+        foreach ($pair in @(@{V=$oldC;N='OldPath';R=$old}, @{V=$newC;N='NewPath';R=$new})) {
+            $v = $pair.V
+            if (Test-IsUncCanon $v) {
+                $segs = @($v.TrimStart('/').Split('/') | Where-Object { $_ })
+                if ($segs.Count -lt 1) {
+                    Write-Error "[$mapPath] ${lineNo}행: $($pair.N) UNC에 서버명이 없음 -> $($pair.R)"; return $false }
+                if ($segs.Count -eq 1) {
+                    Write-Warning "[$mapPath] ${lineNo}행: $($pair.N)이 서버 단위 매핑 (\\$($segs[0])) — 그 서버로 시작하는 모든 경로가 바뀐다. 의도 확인" }
+            }
+            elseif (($v.Split('/')).Count -lt 2) {
+                Write-Error "[$mapPath] ${lineNo}행: 드라이브 루트 통짜 매핑 불가 (드라이브 아래 최소 1세그먼트 필요) -> $l"; return $false }
+        }
+        if (-not (Test-IsUncCanon $oldC) -and -not (Test-IsUncCanon $newC) -and $oldC[0] -ne $newC.ToLower()[0]) {
+            Write-Warning "[$mapPath] ${lineNo}행: 드라이브 문자가 다름 (의도 확인) -> $old -> $new" }
+        if ((Test-IsUncCanon $oldC) -ne (Test-IsUncCanon $newC)) {
+            Write-Host "  [교차매핑] ${lineNo}행: $old -> $new (드라이브<->UNC)" }
         $script:MapTable[$oldC] = $newC
         $mapOrder.Add($oldC)
     }
@@ -123,24 +197,14 @@ function Import-PathMapping([string]$mapPath) {
     # 긴 경로 우선 (d:/eos/upload가 d:/eos보다 먼저 매칭되도록)
     $sorted = $mapOrder | Sort-Object { $_.Length } -Descending
 
-    # 구분자: / 또는 \ 또는 \\ (java 문자열 리터럴) 어느 것이든 매칭
-    $sep = '(?:\\\\|\\|/)'
-    $alts = foreach ($oldC in $sorted) {
-        $segs = $oldC.Split('/')
-        $dl = $segs[0][0]
-        $body = ($segs[1..($segs.Count-1)] | ForEach-Object { [regex]::Escape($_) }) -join $sep
-        "[" + [char]::ToLower($dl) + [char]::ToUpper($dl) + "]:" + $sep + $body
-    }
+    $alts = foreach ($oldC in $sorted) { New-PathAlt $oldC }
     # 앞: 영숫자 아님(forward:/ 오탐 방지) / 뒤: 단어문자·점·하이픈 아님(d:/eos가 d:/eosdata 매칭 방지)
     $pattern = "(?<![a-zA-Z0-9])(?:" + ($alts -join "|") + ")(?![\w.\-])"
     $script:rx = New-Object System.Text.RegularExpressions.Regex($pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
     # TO-BE(NewPath) 인식 — 치환 완료 경로가 UNMAPPED로 오보되지 않게
     $newAlts = foreach ($newC in ($script:MapTable.Values | Select-Object -Unique | Sort-Object Length -Descending)) {
-        $segs = $newC.Split('/')
-        $dl = $segs[0][0]
-        $body = ($segs[1..($segs.Count-1)] | ForEach-Object { [regex]::Escape($_) }) -join $sep
-        "[" + [char]::ToLower($dl) + [char]::ToUpper($dl) + "]:" + $sep + $body
+        New-PathAlt (Get-Canon $newC)
     }
     $script:rxNew = New-Object System.Text.RegularExpressions.Regex(
         ("(?<![a-zA-Z0-9])(?:" + ($newAlts -join "|") + ")"),
@@ -148,20 +212,39 @@ function Import-PathMapping([string]$mapPath) {
     return $true
 }
 
-# ---------- 치환값 생성 (구분자 스타일·드라이브 대소문자 보존) ----------
+# ---------- 치환값 생성 (구분자 스타일·드라이브 대소문자 보존, v4: UNC 지원) ----------
+# 스타일 판정은 '접두(d: 또는 UNC 선두 \\) 뒤쪽'에서 한다.
+#   v3는 문자열 전체를 보고 판정해서 \\nas\share 를 java 리터럴(\\)로 오인했다.
 function Get-Replacement([string]$orig) {
     $canon = Get-Canon $orig
     $new = $script:MapTable[$canon]
     if (-not $new) { return $null }
-    if     ($orig -match '\\\\') { $style = '\\' }
-    elseif ($orig -match '\\')   { $style = '\'  }
-    else                         { $style = '/'  }
-    $styled = $new.Replace('/', $style)
-    if ([char]::ToLower($styled[0]) -eq [char]::ToLower($orig[0])) {
-        $styled = $orig[0] + $styled.Substring(1)
+
+    $origIsUnc = $orig -match '^[\\/]{2,}'
+    $lm   = [regex]::Match($orig, '^(?:[A-Za-z]:)?([\\/]+)')
+    $lead = $lm.Groups[1].Value
+    $rest = $orig.Substring($lm.Length)
+
+    if     ($rest -match '\\\\') { $style = '\\' }      # java 리터럴 d:\\eos\\log
+    elseif ($rest -match '\\')   { $style = '\'  }
+    elseif ($rest -match '/')    { $style = '/'  }
+    else {
+        # 구분자가 접두 하나뿐인 경우 (d:/eos, \\nas) — 접두로 판정
+        if     ($lead -match '/') { $style = '/' }
+        elseif ($origIsUnc)       { $style = if ($lead.Length -ge 4) { '\\' } else { '\' } }
+        else                      { $style = if ($lead.Length -ge 2) { '\\' } else { '\' } }
     }
-    return $styled
+
+    if (Test-IsUncCanon $new) {
+        # UNC로 치환 — 선두는 구분자 스타일 2벌 (\ -> \\ , \\ -> \\\\ , / -> //)
+        return ($style + $style + ($new.TrimStart('/')).Replace('/', $style))
+    }
+    $drive = $new.Substring(0,1)
+    if (-not $origIsUnc -and [char]::ToLower($orig[0]) -eq [char]::ToLower($drive)) { $drive = $orig[0] }
+    return ($drive + ':' + $style + ($new.Substring(2).TrimStart('/')).Replace('/', $style))
 }
+
+function Get-ValueKind([string]$v) { if ($v -match '^[\\/]{2,}') { return "unc" } else { return "path" } }
 
 function Get-LineNumber([string]$text, [int]$idx) {
     $n = 1
@@ -206,6 +289,7 @@ function Invoke-Replace([string]$scanRoot, [string]$mapLabel, [string]$outFile) 
             $newVal = Get-Replacement $m.Value
             $results.Add([pscustomobject]@{
                 Status  = "REPLACE"
+                Kind    = (Get-ValueKind $m.Value)
                 File    = $file
                 RelPath = (Split-Path (Get-RelPath $file) -Parent)
                 Ext     = ([System.IO.Path]::GetExtension($file)).TrimStart('.').ToLower()
@@ -232,11 +316,12 @@ function Invoke-Replace([string]$scanRoot, [string]$mapLabel, [string]$outFile) 
             if (-not $covered) {
                 $results.Add([pscustomobject]@{
                     Status  = "UNMAPPED"
+                    Kind    = (Get-ValueKind $g.Value)
                     File    = $file
                     RelPath = (Split-Path (Get-RelPath $file) -Parent)
                     Ext     = ([System.IO.Path]::GetExtension($file)).TrimStart('.').ToLower()
                     Line    = Get-LineNumber $content $g.Index
-                    Old     = ""
+                    Old     = $g.Value.Trim()
                     New     = ""
                     MapKey  = ""
                     Context = Get-Context $content $g.Index
@@ -303,8 +388,9 @@ function Invoke-Replace([string]$scanRoot, [string]$mapLabel, [string]$outFile) 
 
 # ---------- 실행 ----------
 $mode = if ($Apply) { "APPLY(치환 실행)" } else { "DryRun(검토 전용)" }
-Write-Host "===== Replace-AsisPath v3 ====="
+Write-Host "===== Replace-AsisPath v4 ====="
 Write-Host "모드: $mode"
+Write-Host "UNMAPPED 탐지: 드라이브 A-Z + UNC(\\서버) — 좁히려면 -DetectPattern 지정"
 
 if ($RootList) {
     # ── 일괄 모드: 소스경로,매핑파일 ──
