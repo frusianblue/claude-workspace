@@ -1,0 +1,10 @@
+# IP 매핑표 — 이 파일을 복사해서 ip_mapping_<환경>.dat 로 사용 (내용은 예시 데이터임)
+# 형식: 업무코드,업무명,서버명,호스트명,OldIP,NewIP,OldPort,NewPort
+# - 첫 줄 헤더 고정 (OldIP/NewIP 이름을 스크립트가 검증)
+# - 포트가 안 바뀌면 뒤 두 칸 비우되 콤마는 유지
+# - OldIP 중복 금지 / localhost·0.0.0.0 은 넣지 않음
+# - 메모장으로 편집 (엑셀 저장 금지 — DRM). UTF-8 BOM 저장
+업무코드,업무명,서버명,호스트명,OldIP,NewIP,OldPort,NewPort
+EOS01,포털,WDAAD11,asis-web01,192.168.1.10,10.20.1.10,8080,9090
+EOS02,리포팅,WDDIM11,asis-was01,192.168.1.11,10.20.1.11,,
+EOS03,연계,WDIFD11,asis-if01,192.168.2.20,10.20.2.20,,

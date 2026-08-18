@@ -1,0 +1,4 @@
+# Replace-AsisPath 일괄 목록 — 소스경로,매핑파일[,비고]  (2컬럼 필수: 소스마다 매핑이 다름)
+# 사용: .\Replace-AsisPath.ps1 -RootList .\RootList\replace_targets.dat
+# Apply 전 전 소스·전 매핑을 사전 검증하고, 하나라도 깨지면 아무것도 건드리지 않는다.
+D:\AppDev\eGovFrameDev-5.0.1-Windows-64bit\workspace-egov\portal,D:\Utils\folder-find\mapping\path_mapping_portal.dat
