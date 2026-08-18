@@ -6,7 +6,7 @@
 #   입력 : -Root + -Map (또는 -RootList: 소스경로,매핑파일)
 #   출력 : report\<소스명>_asis_path_replace_report.dat + <소스명>_backup_path_<시각>\
 #   선행 : A-2 매핑표 작성 완료. ★ 인코딩 통일(B-6)을 먼저 끝낼 것
-#   상태 : 현행 v4
+#   상태 : 현행 v4.1
 #
 #   공통 : 이 파일은 UTF-8 with BOM 으로 저장할 것 (PS 5.1은 BOM 없으면 MS949로 읽음)
 #          실행:  powershell -ExecutionPolicy Bypass -File .\<파일>.ps1 ...
@@ -59,7 +59,9 @@ param(
     [string]$ExcludeList = "",              # 제외할 파일 경로 목록 파일 (한 줄에 하나)
     # UNMAPPED 탐지용 (Find v9와 동일 사상: 드라이브 전부 + UNC)
     # 특정 구경로만 보고 싶으면 직접 지정: -DetectPattern "(?<![a-zA-Z0-9])[dD]:[/\\]"
-    [string]$DetectPattern = "(?<![a-zA-Z0-9])[A-Za-z]:[/\\]|(?<![\w:])\\{2,4}(?=[A-Za-z0-9])|(?<![\w:/])//(?=[A-Za-z0-9][\w.\-]*/)",
+    # [v4.1] UNC 탐지는 Find v9.4와 같은 기준 — '점 있는 호스트' 또는 '2글자+호스트\2글자+공유명'.
+    #        느슨하게 두면 java/js의 정규식 이스케이프(\\d{1,3}, \\x20\\t)가 전부 UNMAPPED로 올라온다.
+    [string]$DetectPattern = "(?<![a-zA-Z0-9])[A-Za-z]:[/\\]|(?<![\w:])\\{2,4}(?!(?:x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})(?![\w\-]))(?=[A-Za-z0-9][\w\-]*(?:\.[\w\-]+|(?:\\{1,2}|/)[^\s`"'<>|*?:,;=(){}\[\]\\/]{2,}))",
     [switch]$Apply
 )
 # [PATCH 2026-08-13] .NET 정적 메서드의 상대경로 기준을 PowerShell 현재 위치와 일치시킨다.
@@ -388,7 +390,7 @@ function Invoke-Replace([string]$scanRoot, [string]$mapLabel, [string]$outFile) 
 
 # ---------- 실행 ----------
 $mode = if ($Apply) { "APPLY(치환 실행)" } else { "DryRun(검토 전용)" }
-Write-Host "===== Replace-AsisPath v4 ====="
+Write-Host "===== Replace-AsisPath v4.1 ====="
 Write-Host "모드: $mode"
 Write-Host "UNMAPPED 탐지: 드라이브 A-Z + UNC(\\서버) — 좁히려면 -DetectPattern 지정"
 

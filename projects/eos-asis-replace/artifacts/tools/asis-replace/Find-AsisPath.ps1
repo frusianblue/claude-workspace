@@ -7,14 +7,14 @@
 #   입력 : -Root 소스 폴더 (또는 -RootList 목록 파일)
 #   출력 : report\<소스명>_asis_path_report.dat
 #   선행 : 없음 — 소스 1건의 첫 작업
-#   상태 : 현행 v9.3
+#   상태 : 현행 v9.4
 #
 #   공통 : 이 파일은 UTF-8 with BOM 으로 저장할 것 (PS 5.1은 BOM 없으면 MS949로 읽음)
 #          실행:  powershell -ExecutionPolicy Bypass -File .\<파일>.ps1 ...
 #          출력 확장자 .dat 유지 (회사 DRM의 csv/txt 자동 암호화 회피)
 #   전체 순서는 ..\README.md 참조
 # ===========================================================================
-# Find-AsisPath.ps1 (v9.3)
+# Find-AsisPath.ps1 (v9.4)
 #
 # ── Kind (무엇을 찾을지) — 지정 안 하면 path,unc ─────────────────────
 #   -Kind path    : 드라이브 경로  d:\eos, W:/data, Z:\\share (java 리터럴 포함)
@@ -71,6 +71,11 @@
 #       apache.org, sun.com ...) 제외. 제외 증적은 <리포트명>_skipped.dat 에 jar와 함께 남는다.
 #       전부 보려면 -ExcludeDomains ""
 #
+# v9.4: 실측 리포트(1390건) 오탐 제거 —
+#       (1) 백슬래시 UNC는 '점 있는 호스트' 또는 '공유명 필수' (정규식 이스케이프 \\d \\s 오탐 203건 제거)
+#       (2) //host/share 는 기본 OFF, -UncSlash 로만 켬 (DOCTYPE -//W3C//DTD 오탐 881건 제거)
+#       (3) UNC 호스트에도 -ExcludeDomains 적용
+#
 # 사용법: .\Find-AsisPath.ps1 -Root "C:\src" [-Kind all] [-Scope src] [-Out report.dat]
 #         .\Find-AsisPath.ps1 -Root "C:\src" -Inventory            # 먼저 이걸로 사각지대 확인
 # ===========================================================================
@@ -88,7 +93,7 @@ param(
     [string]$Pattern = "",               # 지정 시 -Kind 무시하고 이 정규식만 사용 (v8.2 호환)
     [string]$Out     = "report\asis_path_report.dat",
     [string[]]$ExcludeDirs = @(".git",".svn",".metadata","node_modules","bak","backup"),
-    [string[]]$ExcludeFiles = @("*.bak","*.back"),   # 파일명 패턴 제외
+    [string[]]$ExcludeFiles = @("*.bak","*.back","*stale-data.txt"),   # 파일명 패턴 제외
     # v9.2: 널리 알려진 OSS/벤더 jar 제외 (파일명 와일드카드, 중첩 jar에도 적용)
     #   전부 조사하려면 -ExcludeJars @()  /  자체 jar가 걸러지면 -ExcludeJars 로 목록을 직접 지정
     [string[]]$ExcludeJars = @(
@@ -115,6 +120,7 @@ param(
         "github.com","github.io","npmjs.com","bootstrapcdn.com","microsoft.com","purl.org",
         "dublincore.org","openoffice.org","egovframe.go.kr","egovframework.go.kr","example.com"
     ),
+    [switch]$UncSlash,                   # //host/share 형태까지 탐지 (기본 OFF — DOCTYPE 공개식별자 오탐이 심하다)
     [string[]]$AddExt = @(),             # 조사할 확장자 추가. 예: -AddExt "jspf,inc,frm" / -AddExt "*.pc"
                                          #   -AddExt "*" = 확장자 없는 파일까지 전부 (class/jar도 텍스트로 한 번 더 스캔됨)
     [switch]$Inventory,                  # 조사 안 하고, Root 안의 확장자 분포 + 조사대상 여부만 출력
@@ -214,9 +220,25 @@ function New-KindPattern([string[]]$kinds) {
 
     # 1) UNC / NAS  — \\nas\share, \\192.168.1.50\data, \\\\nas\\share(java), //nas/share
     if ($kinds -contains "unc") {
-        $alts.Add('(?<unc>(?<![\w:])\\{2,4}(?![\\/])[A-Za-z0-9][\w.\-]*(?:' + $SEP + $SEG + '*)*)')
-        # //host/share — 앞에 : 가 오면(http://) 제외, 공유명이 있어야만 인정(주석 //foo 오탐 방지)
-        $alts.Add('(?<unc>(?<![\w:/])//(?![/])[A-Za-z0-9][\w.\-]*(?:/' + $SEG + '*)+)')
+        # [v9.4] 백슬래시 UNC는 둘 중 하나여야 인정한다:
+        #   (1) 호스트에 점이 있거나 (\\nas01.company.co.kr\share)
+        #   (2) 2글자 이상 호스트 + 2글자 이상 공유명 (\\nas01\share)
+        # 이유: 실측 리포트에서 정규식 이스케이프가 UNC로 둔갑했다 —
+        #       \\d{1,3} \\s+ \\w- \\da-f (203건), jQuery의 \\x20\\t\\r\\n\\f 는
+        #       '호스트+공유명' 구조와 완전히 같아서 길이·이스케이프 형태로만 구분된다.
+        # 포기하는 것: 서버명만 있는 \\nas01, 공유명이 1글자인 \\nas01\a (이스케이프와 구분 불가)
+        $escGuard = '(?!(?:x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})(?![\w\-]))'   # \\x20\\t, \\u00A0 차단
+        $hostDot  = '[A-Za-z0-9][\w\-]*(?:\.[\w\-]+)+'                    # nas01.company.co.kr
+        $hostPlain= '[A-Za-z0-9][\w\-]*[A-Za-z0-9]'                        # 2글자 이상, 하이픈으로 안 끝남
+        $alts.Add('(?<unc>(?<![\w:])\\{2,4}(?![\\/])' + $escGuard + '(?:' +
+                  $hostDot + '(?:' + $SEP + $SEG + '*)*' +
+                  '|' + $hostPlain + $SEP + $SEG + '{2,}(?:' + $SEP + $SEG + '*)*))')
+        # [v9.4] //host/share 형태는 기본 OFF (-UncSlash 로 켠다).
+        #   실측: DOCTYPE 공개식별자 -//W3C//DTD, -//mybatis.org//DTD 가 881건,
+        #         .class 상수풀 길이바이트(0x2F='/')가 만든 //uss/olp/... 가스가 20건.
+        if ($UncSlash) {
+            $alts.Add('(?<unc>(?<![\w:/\-])//(?![/])[A-Za-z0-9][\w.\-]*(?:/' + $SEG + '+)+)')
+        }
     }
     # 2) 드라이브 경로 — d:\eos, W:/data, Z:\\share
     if ($kinds -contains "path") {
@@ -389,6 +411,10 @@ function Add-Result([string]$foundIn, [string]$container, [string]$file, [string
                     [string]$line, [string]$kind, [string]$value, [string]$match) {
     # 표준 스키마 도메인(w3.org, mybatis.org 등)은 리포트에 넣지 않는다 — 집계만 한다
     if ($kind -eq "domain" -and (Test-ExcludedDomain $value)) { return }
+    if ($kind -eq "unc") {
+        $uh = [regex]::Match($value, '^[\\/]+([A-Za-z0-9][\w.\-]*)')
+        if ($uh.Success -and $uh.Groups[1].Value.Contains(".") -and (Test-ExcludedDomain $uh.Groups[1].Value)) { return }
+    }
     $rel = Get-RelPath $file
     $relDir = Split-Path $rel -Parent
     $script:results.Add([pscustomobject]@{
@@ -597,7 +623,7 @@ $scopeDesc = @{
     src   = "텍스트만, 빌드산출물 폴더 제외 (소스 증적)"
     build = "CLASS + 아카이브만 (재빌드 후 검증)"
 }
-Write-Host "===== Find-AsisPath v9.3 (Scope=$Scope) ====="
+Write-Host "===== Find-AsisPath v9.4 (Scope=$Scope) ====="
 Write-Host "검색 범위: $($scopeDesc[$Scope])"
 $kindDesc = ($kinds -join ', ')
 if ($kinds -contains 'path') { $kindDesc = $kindDesc + '  (Drives=' + $Drives + ')' }
