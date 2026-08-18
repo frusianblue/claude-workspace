@@ -7,6 +7,7 @@
 <!-- INDEX:START -->
 | 프로젝트 | 상태 | 최근 작업 | 다음 행동 |
 |---|---|---|---|
+| [mar-eos-encoding](projects/eos-asis-replace) | 🟢 active | [2026-08-13](projects/eos-asis-replace/handoffs/2026-08-13.md) | Test-ClassParser.ps1 18항목 전부 PASS 확인 → lev1 재실행해 '재컴파일(소스확인)' 1건 소멸 확인 |
 | [ai-agent-proto](projects/ai-agent-proto) | 🟢 active | [2026-07-19](projects/ai-agent-proto/handoffs/2026-07-19.md) | Debug 탭에서 두 앱 프로세스 생존 확인 (포트 점유 의심, Port already in use 로그) |
 <!-- INDEX:END -->
 
