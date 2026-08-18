@@ -7,14 +7,14 @@
 #   입력 : -Root 소스 폴더 (또는 -RootList 목록 파일)
 #   출력 : report\<소스명>_asis_path_report.dat
 #   선행 : 없음 — 소스 1건의 첫 작업
-#   상태 : 현행 v9.6
+#   상태 : 현행 v9.7
 #
 #   공통 : 이 파일은 UTF-8 with BOM 으로 저장할 것 (PS 5.1은 BOM 없으면 MS949로 읽음)
 #          실행:  powershell -ExecutionPolicy Bypass -File .\<파일>.ps1 ...
 #          출력 확장자 .dat 유지 (회사 DRM의 csv/txt 자동 암호화 회피)
 #   전체 순서는 ..\README.md 참조
 # ===========================================================================
-# Find-AsisPath.ps1 (v9.6)
+# Find-AsisPath.ps1 (v9.7)
 #
 # ── Kind (무엇을 찾을지) — 지정 안 하면 path,unc ─────────────────────
 #   -Kind path    : 드라이브 경로  d:\eos, W:/data, Z:\\share (java 리터럴 포함)
@@ -87,6 +87,10 @@
 #       v9.5까지는 [A-Za-z]: 뒤에 / 나 \ 가 있어야만 잡아서(forward:/ 오탐 방지)
 #       private String Drive3 = "Z:"; 를 통째로 놓쳤다. 치환은 수동(드라이브 루트 매핑 금지 규칙 유지).
 #
+# v9.7: 서버명만 있는 UNC 탐지 — "\\\\nas"  "\\\\windbvs1"  drive=\\\\nas
+#       (따옴표 완전 포함 / = 뒤 줄끝 인 경우만. 정규식 이스케이프와 구분되는 조건)
+#       + ExcludeDomains 확충 (antlr/abego/reactive-streams/wassenaar/jguru/ocheyedan 등)
+#
 # 사용법: .\Find-AsisPath.ps1 -Root "C:\src" [-Kind all] [-Scope src] [-Out report.dat]
 #         .\Find-AsisPath.ps1 -Root "C:\src" -Inventory            # 먼저 이걸로 사각지대 확인
 # ===========================================================================
@@ -150,7 +154,11 @@ param(
         "java.net","java.io","java.com","asp.net",
         # v9.5 실측 2차 — 벤더 JS 주석의 저자·참고 링크
         "jsfiddle.net","fluidproject.org","blindsignals.com","eae.net","nwbox.com",
-        "robertpenner.com","jsguide.net","javascript.internet.com","archive.org","maven.org"
+        "robertpenner.com","jsguide.net","javascript.internet.com","archive.org","maven.org",
+        # v9.7 실측 추가 — 라이선스·빌드툴·라이브러리 문서 링크
+        "ocheyedan.net","wassenaar.org","abego.org","reactive-streams.org","jguru.com",
+        "antlr.org","slf4j.org","junit.org","hamcrest.org","objenesis.org","mockito.org",
+        "asm.ow2.io","ow2.org","projectlombok.org","jetbrains.com","gradle.org","ant.apache.org"
     ),
     # [v9.5] 치환 대상이 아닌 고정 IP (증적은 _skipped.dat)
     [string[]]$ExcludeIps = @("127.0.0.1","0.0.0.0","255.255.255.255"),
@@ -268,6 +276,13 @@ function New-KindPattern([string[]]$kinds) {
         $alts.Add('(?<unc>(?<![\w:])\\{2,4}(?![\\/])' + $escGuard + '(?:' +
                   $hostDot + '(?:' + $SEP + $SEG + '*)*' +
                   '|' + $hostPlain + $SEP + $SEG + '{2,}(?:' + $SEP + $SEG + '*)*))')
+        # [v9.7] 서버명만 있는 UNC — private String Drive5 = "\\\\nas";
+        #   v9.4에서 정규식 이스케이프(\\d, \\s)와 구분이 안 돼 포기했던 케이스인데,
+        #   '따옴표로 완전히 감싸임' 또는 '= 뒤 줄끝' 이면 안전하게 구분된다.
+        #   호스트 2글자 이상 + x##/u#### 이스케이프 제외라서 "\\d" "\\s" "\\x20" 는 안 걸린다.
+        $hostOnly = $escGuard + '[A-Za-z0-9][\w\-]*[A-Za-z0-9]'
+        $alts.Add('(?<unc>(?<=["''])\\{2,4}' + $hostOnly + '(?=["'']))')
+        $alts.Add('(?<unc>(?<=[=\s])\\{2,4}' + $hostOnly + '(?=[ \t]*(?:[\r\n]|$)))')
         # [v9.4] //host/share 형태는 기본 OFF (-UncSlash 로 켠다).
         #   실측: DOCTYPE 공개식별자 -//W3C//DTD, -//mybatis.org//DTD 가 881건,
         #         .class 상수풀 길이바이트(0x2F='/')가 만든 //uss/olp/... 가스가 20건.
@@ -681,7 +696,7 @@ $scopeDesc = @{
     src   = "텍스트만, 빌드산출물 폴더 제외 (소스 증적)"
     build = "CLASS + 아카이브만 (재빌드 후 검증)"
 }
-Write-Host "===== Find-AsisPath v9.6 (Scope=$Scope) ====="
+Write-Host "===== Find-AsisPath v9.7 (Scope=$Scope) ====="
 Write-Host "검색 범위: $($scopeDesc[$Scope])"
 $kindDesc = ($kinds -join ', ')
 if ($kinds -contains 'path') { $kindDesc = $kindDesc + '  (Drives=' + $Drives + ')' }

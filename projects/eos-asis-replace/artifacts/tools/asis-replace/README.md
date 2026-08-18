@@ -3,7 +3,7 @@
 | 파일 | 단계 | 역할 |
 |---|---|---|
 | `Get-MappedDrives.ps1` (v1) | A-0 | 이 PC/서버의 네트워크 드라이브 ↔ 실제 UNC 수집. `-EmitMapping`으로 치환 매핑표 초안까지 |
-| `Find-AsisPath.ps1` (v9.6) | A-1 | 전수조사. `-Kind path,unc,ip,port,domain,host`, `-Scope all/src/build`, `-Inventory`, `-AddExt`, `-ExcludeJars`/`-ExcludeDomains`(노이즈 제외), `-RootList` 일괄, jar/war 중첩 내부까지 |
+| `Find-AsisPath.ps1` (v9.7) | A-1 | 전수조사. `-Kind path,unc,ip,port,domain,host`, `-Scope all/src/build`, `-Inventory`, `-AddExt`, `-ExcludeJars`/`-ExcludeDomains`(노이즈 제외), `-RootList` 일괄, jar/war 중첩 내부까지 |
 | `Extract-MappingDraft.ps1` (v2.1) | A-2 | Find 리포트에서 매핑표 초안 추출 (`-Mode Path\|Ip\|Domain\|Port`) |
 | `Replace-AsisPath.ps1` (v4.2) | A-3 | 경로 치환(드라이브 + UNC/NAS). DryRun 기본, `-Apply` 시 자동 백업 |
 | `Replace-AsisIp.ps1` (v5) | A-4 | IP 치환. `-UsePort`로 `IP:포트` 규칙 우선 |
