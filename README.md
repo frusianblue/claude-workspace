@@ -7,7 +7,7 @@
 <!-- INDEX:START -->
 | 프로젝트 | 상태 | 최근 작업 | 다음 행동 |
 |---|---|---|---|
-| [mar-eos-encoding](projects/eos-asis-replace) | 🟢 active | [2026-08-18](projects/eos-asis-replace/handoffs/2026-08-18.md) | 회사 PS 5.1에서 Find-AsisPath v9.7 구문 통과 확인(배너 v9.7 출력) → Get-MappedDrives -Tag 모바일DM -EmitMapping 로 드라이브↔UNC 실측 |
+| [mar-eos-encoding](projects/eos-asis-replace) | 🟢 active | [2026-08-18](projects/eos-asis-replace/handoffs/2026-08-18b.md) | Find-AsisPath v9.8 배너 확인 후 FindTest.java 픽스처로 -Kind all 실행 — PS 5.1에서 스캔 경로 런타임 첫 검증 |
 | [ai-agent-proto](projects/ai-agent-proto) | 🟢 active | [2026-07-19](projects/ai-agent-proto/handoffs/2026-07-19.md) | Debug 탭에서 두 앱 프로세스 생존 확인 (포트 점유 의심, Port already in use 로그) |
 <!-- INDEX:END -->
 
