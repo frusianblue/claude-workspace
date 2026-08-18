@@ -1,0 +1,16 @@
+새 연결이 저장되었습니다.
+
+
+상태       로컬     원격                      네트워크
+
+-------------------------------------------------------------------------------
+OK           T:       \\10.10.18.229\midmfs9
+                                            Microsoft Windows Network
+OK           X:       \\nas_mobiledb\MobileDB
+                                            Microsoft Windows Network
+OK           Z:       \\nas_digitsign_rdon\digitsign_rdon
+                                            Microsoft Windows Network
+연결 끊김    Y:
+             \\windbvs1\MCSI_Res$
+                                            Microsoft Windows Network
+명령을 잘 실행했습니다.

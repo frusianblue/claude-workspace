@@ -7,14 +7,14 @@
 #   입력 : -Root 소스 폴더 (또는 -RootList 목록 파일)
 #   출력 : report\<소스명>_asis_path_report.dat
 #   선행 : 없음 — 소스 1건의 첫 작업
-#   상태 : 현행 v9.7
+#   상태 : 현행 v9.8
 #
 #   공통 : 이 파일은 UTF-8 with BOM 으로 저장할 것 (PS 5.1은 BOM 없으면 MS949로 읽음)
 #          실행:  powershell -ExecutionPolicy Bypass -File .\<파일>.ps1 ...
 #          출력 확장자 .dat 유지 (회사 DRM의 csv/txt 자동 암호화 회피)
 #   전체 순서는 ..\README.md 참조
 # ===========================================================================
-# Find-AsisPath.ps1 (v9.7)
+# Find-AsisPath.ps1 (v9.8)
 #
 # ── Kind (무엇을 찾을지) — 지정 안 하면 path,unc ─────────────────────
 #   -Kind path    : 드라이브 경로  d:\eos, W:/data, Z:\\share (java 리터럴 포함)
@@ -91,6 +91,11 @@
 #       (따옴표 완전 포함 / = 뒤 줄끝 인 경우만. 정규식 이스케이프와 구분되는 조건)
 #       + ExcludeDomains 확충 (antlr/abego/reactive-streams/wassenaar/jguru/ocheyedan 등)
 #
+# v9.8: ExcludeDomains 32건 추가 (2026-08-18 실측 도메인 리포트 육안 선별분)
+#       판정이 '완전일치 or .접미사'이므로 www./서브도메인은 기본 도메인으로 정규화해 넣었다
+#       javax.net 은 도메인이 아니라 자바 패키지(import javax.net.ssl.*) — java.net/java.io 와 같은 계열
+#       nia.or.kr 은 일부러 넣지 않았다 (유일한 실치환 후보. 위치 확인 후 판단)
+#
 # 사용법: .\Find-AsisPath.ps1 -Root "C:\src" [-Kind all] [-Scope src] [-Out report.dat]
 #         .\Find-AsisPath.ps1 -Root "C:\src" -Inventory            # 먼저 이걸로 사각지대 확인
 # ===========================================================================
@@ -158,7 +163,26 @@ param(
         # v9.7 실측 추가 — 라이선스·빌드툴·라이브러리 문서 링크
         "ocheyedan.net","wassenaar.org","abego.org","reactive-streams.org","jguru.com",
         "antlr.org","slf4j.org","junit.org","hamcrest.org","objenesis.org","mockito.org",
-        "asm.ow2.io","ow2.org","projectlombok.org","jetbrains.com","gradle.org","ant.apache.org"
+        "asm.ow2.io","ow2.org","projectlombok.org","jetbrains.com","gradle.org","ant.apache.org",
+        # ── v9.8 실측 추가 (2026-08-18) ───────────────────────────────────────
+        # 판정: 완전일치 또는 '.패턴' 접미사. 그래서 www./서브도메인은 빼고 기본 도메인으로 넣는다
+        #   (www.redhat.com 을 넣으면 redhat.com 단독 표기가 통과한다)
+        # DB / 프레임워크 문서 링크
+        "hsqldb.org","flywaydb.org","h2database.com","checkerframework.org","mapstruct.org",
+        "xmlpull.org","eclipsesource.com","hazelcast.com","hazelcast.org",
+        # 자바 패키지가 도메인으로 오인된 것 (import javax.net.ssl.* — java.net/java.io 와 같은 계열)
+        "javax.net",
+        # 벤더 JS 주석의 저자·참고 링크
+        "dhtmlgoodies.com","dthmlgoodies.com","kelvinluck.com","isaacschlueter.com",
+        "thinkweb2.com","lexonista.com","crockford.com","jacklmoore.com",
+        # 일반 웹·블로그·저장소 호스트 (치환 대상이 될 수 없는 성격)
+        "wikipedia.org","blogspot.com","livejournal.com","googlesource.com","googlecode.com",
+        # 제품·회사 홈페이지
+        "randori.com","redhat.com","openssl.org","apple.com","1mobile.com",
+        # 클라우드 예시값 — [주의] 실제 배포 대상이면 여기서 빼야 한다
+        "snowflakecomputing.com","database.windows.net","ec2.amazonaws.com"
+        # [보류] nia.or.kr — 2차 리포트의 유일한 실치환 후보 도메인.
+        #        제외하면 조용히 사라진다. 위치 확인 후 판단할 것
     ),
     # [v9.5] 치환 대상이 아닌 고정 IP (증적은 _skipped.dat)
     [string[]]$ExcludeIps = @("127.0.0.1","0.0.0.0","255.255.255.255"),
@@ -696,7 +720,7 @@ $scopeDesc = @{
     src   = "텍스트만, 빌드산출물 폴더 제외 (소스 증적)"
     build = "CLASS + 아카이브만 (재빌드 후 검증)"
 }
-Write-Host "===== Find-AsisPath v9.7 (Scope=$Scope) ====="
+Write-Host "===== Find-AsisPath v9.8 (Scope=$Scope) ====="
 Write-Host "검색 범위: $($scopeDesc[$Scope])"
 $kindDesc = ($kinds -join ', ')
 if ($kinds -contains 'path') { $kindDesc = $kindDesc + '  (Drives=' + $Drives + ')' }
